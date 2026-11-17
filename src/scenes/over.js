@@ -4,7 +4,7 @@ const BEST = 'deeptrouble.best';
 
 export class OverScene extends Phaser.Scene {
   constructor() { super('over'); }
-  init(data) { this.result = data || { score: 0 }; }
+  init(data) { this.result = data || { score: 0 }; this.left = false; this.ready = false; }
 
   create() {
     const { width: W, height: H } = this.scale;

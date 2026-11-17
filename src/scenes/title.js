@@ -5,6 +5,7 @@ export class TitleScene extends Phaser.Scene {
   constructor() { super('title'); }
 
   create() {
+    this.started = false;
     const { width: W, height: H } = this.scale;
     const g = this.add.graphics();
     g.fillGradientStyle(0x0d4f7a, 0x0d4f7a, 0x041627, 0x041627, 1).fillRect(0, 0, W, H);
