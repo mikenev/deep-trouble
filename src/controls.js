@@ -1,7 +1,8 @@
 import { unlockAudio } from './sfx.js';
 
 // One input state built from keyboard, touch, gamepad and the Fire TV remote.
-// Each frame: x and y in -1..1, fire held, and one-frame presses for fire, confirm, back and mute.
+// Each frame: x and y in -1..1, fire held, and one-frame presses for fire, confirm, action
+// (board or leave the Remora, dock), menu up/down, back and mute.
 export class Controls {
   constructor(scene, { touchUI = true } = {}) {
     this.scene = scene;
@@ -9,22 +10,24 @@ export class Controls {
     this.keys = scene.input.keyboard.addKeys({
       up: K.UP, down: K.DOWN, left: K.LEFT, right: K.RIGHT,
       w: K.W, a: K.A, s: K.S, d: K.D,
-      space: K.SPACE, z: K.Z, enter: K.ENTER, esc: K.ESC, back: K.BACKSPACE, m: K.M,
+      space: K.SPACE, z: K.Z, enter: K.ENTER, esc: K.ESC, back: K.BACKSPACE, m: K.M, e: K.E,
     }, true, false);
-    this.state = { x: 0, y: 0, fire: false, firePressed: false, confirm: false, back: false, mute: false };
+    this.state = { x: 0, y: 0, fire: false, firePressed: false, confirm: false, action: false, enter: false, enterPressed: false, up: false, down: false, back: false, mute: false };
     this._prev = {};
-    this._queued = { back: false, mute: false };
-    this.touch = { x: 0, y: 0, fire: false, back: false, mute: false, stickId: -1, fireId: -1 };
+    this._queued = { back: false, mute: false, action: false };
+    this.touch = { x: 0, y: 0, fire: false, back: false, mute: false, action: false, stickId: -1, fireId: -1 };
 
     // Fire TV remote keys that Phaser has no names for: Back (4), Menu (82), Play/Pause (179)
     this._onKey = (e) => {
       unlockAudio();
       if (e.keyCode === 4) { this._queued.back = true; e.preventDefault(); }
-      if (e.keyCode === 82 || e.keyCode === 179) { this._queued.back = true; e.preventDefault(); }
+      if (e.keyCode === 179) { this._queued.back = true; e.preventDefault(); }
+      if (e.keyCode === 82) { this._queued.action = true; e.preventDefault(); } // Menu: sub / dock
     };
     window.addEventListener('keydown', this._onKey);
     this._jd = {};
-    const names = { Space: 'space', KeyZ: 'z', Enter: 'enter', NumpadEnter: 'enter', Escape: 'esc', Backspace: 'back', KeyM: 'm' };
+    const names = { Space: 'space', KeyZ: 'z', Enter: 'enter', NumpadEnter: 'enter', Escape: 'esc', Backspace: 'back', KeyM: 'm', KeyE: 'e',
+      ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down' };
     scene.input.keyboard.on('keydown', (e) => { const n = names[e.code]; if (n && !e.repeat) this._jd[n] = true; });
     scene.input.on('pointerdown', unlockAudio);
     scene.events.once('shutdown', () => window.removeEventListener('keydown', this._onKey));
@@ -43,7 +46,11 @@ export class Controls {
     const fireTxt = s.add.text(W - 92, H - 92, 'FIRE', { fontFamily: 'monospace', fontSize: 16, color: '#fff' }).setOrigin(0.5);
     const pause = s.add.text(W - 120, 14, 'II', { fontFamily: 'monospace', fontSize: 20, color: '#fff', backgroundColor: '#0008', padding: { x: 10, y: 4 } });
     const mute = s.add.text(W - 64, 14, 'M', { fontFamily: 'monospace', fontSize: 20, color: '#fff', backgroundColor: '#0008', padding: { x: 10, y: 4 } });
-    ui.add([base, knob, fire, fireTxt, pause, mute]);
+    // context button above FIRE: board or leave the Remora, or dock at the boat; hidden when it does nothing
+    const act = s.add.circle(W - 92, H - 196, 34, 0x58d6ff, 0.35).setStrokeStyle(2, 0xffffff, 0.5).setVisible(false);
+    const actTxt = s.add.text(W - 92, H - 196, '', { fontFamily: 'monospace', fontSize: 14, color: '#fff' }).setOrigin(0.5).setVisible(false);
+    this._act = [act, actTxt];
+    ui.add([base, knob, fire, fireTxt, pause, mute, act, actTxt]);
     this._knob = knob;
     const t = this.touch;
     const inRect = (o, p) => o.getBounds().contains(p.x, p.y);
@@ -52,6 +59,7 @@ export class Controls {
       ui.setVisible(true);
       if (inRect(pause, p)) { t.back = true; return; }
       if (inRect(mute, p)) { t.mute = true; return; }
+      if (act.visible && Phaser.Math.Distance.Between(p.x, p.y, act.x, act.y) <= 40) { t.action = true; return; }
       if (p.x < W / 2 && t.stickId < 0) { t.stickId = p.id; this._stick(p, cx, cy, R); }
       else if (p.x >= W / 2) { t.fireId = p.id; t.fire = true; t.firePress = true; }
     });
@@ -62,6 +70,14 @@ export class Controls {
     };
     s.input.on('pointerup', up);
     s.input.on('pointerupoutside', up);
+  }
+
+  // label the touch context button, or hide it with null
+  setAction(label) {
+    if (!this._act || this._actLabel === label) return;
+    this._actLabel = label;
+    this._act[0].setVisible(!!label);
+    this._act[1].setVisible(!!label).setText(label || '');
   }
 
   _stick(p, cx, cy, R) {
@@ -78,7 +94,7 @@ export class Controls {
     const k = this.keys, t = this.touch, st = this.state;
     let x = (k.right.isDown || k.d.isDown ? 1 : 0) - (k.left.isDown || k.a.isDown ? 1 : 0);
     let y = (k.down.isDown || k.s.isDown ? 1 : 0) - (k.up.isDown || k.w.isDown ? 1 : 0);
-    let fire = k.space.isDown || k.z.isDown || k.enter.isDown || t.fire;
+    let fire = k.space.isDown || k.z.isDown || t.fire;
     if (t.x || t.y) { x = t.x; y = t.y; }
     const pad = this.scene.input.gamepad?.total ? this.scene.input.gamepad.pad1 : null;
     if (pad) {
@@ -95,12 +111,19 @@ export class Controls {
     this._jd = {};
     const edge = (name, now) => { const e = now && !this._prev[name]; this._prev[name] = now; return e; };
     const padFire = edge('padFire', !!pad?.A), padBack = edge('padBack', !!(pad && (pad.B || pad.buttons[9]?.pressed)));
-    st.x = x; st.y = y; st.fire = fire || jd.space || jd.z || jd.enter;
-    st.firePressed = jd.space || jd.z || jd.enter || padFire || !!t.firePress;
+    const padAct = edge('padAct', !!(pad && (pad.Y || pad.X)));
+    // menu steps: arrow/WASD key events, or the stick/D-pad crossing the halfway mark
+    const padUp = edge('padUp', !!pad && y < -0.5), padDown = edge('padDown', !!pad && y > 0.5);
+    st.x = x; st.y = y; st.fire = fire || jd.space || jd.z;
+    st.firePressed = jd.space || jd.z || padFire || !!t.firePress;
     st.confirm = jd.enter || jd.space || padFire || !!t.firePress;
+    // Enter (Fire TV Select) fires in the dive unless a dock or board prompt is up; the dive scene decides
+    st.enter = k.enter.isDown; st.enterPressed = !!jd.enter;
+    st.action = jd.e || padAct || !!t.action || this._queued.action;
+    st.up = jd.up || padUp; st.down = jd.down || padDown;
     st.back = jd.esc || jd.back || padBack || t.back || this._queued.back;
     st.mute = jd.m || t.mute;
-    t.firePress = false; t.back = false; t.mute = false; this._queued.back = false;
+    t.firePress = false; t.back = false; t.mute = false; t.action = false; this._queued.back = false; this._queued.action = false;
     if (st.firePressed || x || y) unlockAudio();
     return st;
   }

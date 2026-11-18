@@ -23,6 +23,12 @@ const VOICES = {
   hurt: { type: 'sawtooth', f0: 200, f1: 70, dur: 0.25, vol: 0.07 },
   air: { type: 'sine', f0: 660, f1: 660, dur: 0.06, vol: 0.05 },
   over: { type: 'triangle', f0: 330, f1: 110, dur: 0.7, vol: 0.08 },
+  pearl: { type: 'sine', f0: 1320, f1: 1980, dur: 0.12, vol: 0.06 },
+  buy: { type: 'triangle', f0: 660, f1: 1320, dur: 0.22, vol: 0.08 },
+  deny: { type: 'square', f0: 160, f1: 120, dur: 0.18, vol: 0.05 },
+  torpedo: { type: 'sawtooth', f0: 140, f1: 60, dur: 0.3, vol: 0.06 },
+  board: { type: 'sine', f0: 440, f1: 880, dur: 0.12, vol: 0.06 },
+  nav: { type: 'sine', f0: 900, f1: 900, dur: 0.04, vol: 0.04 },
 };
 export function play(name) {
   const v = VOICES[name];

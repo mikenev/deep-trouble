@@ -17,3 +17,18 @@ export const CREATURES = {
   crab:      { hp: 2, score: 20, speed: 55,  damage: 1, size: [34, 26] },
 };
 export const SPAWN = { max: 9, every: 1.4, minDist: 520 };
+
+// M2: tide pearls, the port shop and the Remora mini sub.
+// Chance a defeated creature drops a pearl, and what it's worth.
+export const PEARL = { drop: { jelly: [0.4, 1], crab: [0.5, 1], barracuda: [0.6, 2], ray: [0.7, 3] }, sink: 55, life: 14 };
+export const SHOP = {
+  spear:  { name: 'Barbed spear tip', desc: '+1 spear damage', costs: [12, 25] },
+  air:    { name: 'Bigger air tank',  desc: '+50 air',         costs: [8, 18] },
+  remora: { name: 'The Remora',       desc: 'Mini sub, torpedoes, armored hull', costs: [60] },
+};
+export const REMORA = {
+  accel: 520, maxSpeed: 300, water: 1.6, hull: 6, hurtInvuln: 1.0, airRefill: 12,
+  board: 90, // how close the diver must be to climb back in
+};
+export const TORPEDO = { speed0: 180, speed: 560, accel: 900, cooldown: 0.55, life: 1.6, damage: 3 };
+export const DOCK = { x: 230, range: 120 };

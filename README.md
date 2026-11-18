@@ -20,6 +20,16 @@ Then open http://localhost:8000/ in a browser.
 
 Surface to refill your air before it runs out.
 
+## Tide pearls, the port shop and the Remora (M2)
+
+Defeated creatures sometimes drop tide pearls. They sink, so swim over them to collect them. Pearls and upgrades save in your browser.
+
+- Spend pearls at the Brinehaven port shop. Pick it from the title menu, or surface by the boat and press the dock button.
+- Upgrades: Barbed spear tip (+1 spear damage), Bigger air tank (+50 air), and the Remora mini sub (60 pearls).
+- Once you own the Remora you start each dive in it. It is faster, fires torpedoes, has an armored hull, and refills your air. If the hull breaks, you bail out and the sub is gone for that dive.
+- Sub and dock button (leave, board or dock): E, gamepad Y or X, the Fire TV Menu button, or the touch button above FIRE. Enter (Fire TV Select) also docks or boards when that prompt is showing, and fires otherwise, so it never does both at once.
+- In the shop, use Up/Down (or the D-pad or stick) to choose and Enter, Space or A to buy, or tap a row. Esc, B or the Fire TV Back button returns to the title.
+
 ## Credits
 
 - [Phaser 3](https://phaser.io/) 3.90.0, vendored under `vendor/phaser/` (MIT license, see `vendor/phaser/LICENSE.md`)

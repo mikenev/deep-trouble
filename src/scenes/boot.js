@@ -91,6 +91,26 @@ export class BootScene extends Phaser.Scene {
     make('heart', 16, 14, (g) => {
       g.fillStyle(0xff4d5e).fillCircle(4, 4, 4).fillCircle(12, 4, 4).fillTriangle(0, 5, 16, 5, 8, 14);
     });
+    // M2 placeholders: tide pearl, the Remora and its torpedo
+    make('pearl', 14, 14, (g) => {
+      g.fillStyle(0xf3e9ff).fillCircle(7, 7, 6);
+      g.fillStyle(0xd7c4f0).fillCircle(8, 9, 3);
+      g.fillStyle(0xffffff).fillCircle(5, 4, 2);
+    });
+    make('remora', 76, 34, (g) => {
+      g.fillStyle(0xe8a92a).fillEllipse(36, 19, 64, 26);
+      g.fillStyle(0xc4861a).fillRect(26, 2, 18, 10);
+      g.fillStyle(0x9fe6ff).fillCircle(54, 17, 6);
+      g.lineStyle(2, 0x5a3a08).strokeCircle(54, 17, 6);
+      g.fillStyle(0x5a3a08).fillRect(0, 14, 6, 10);
+      g.fillStyle(0x8a93a0).fillTriangle(2, 8, 8, 19, 2, 30);
+      g.fillStyle(0x2b2f3a).fillRect(58, 26, 14, 4);
+    });
+    make('torpedo', 26, 8, (g) => {
+      g.fillStyle(0x6c7a86).fillRoundedRect(2, 1, 22, 6, 3);
+      g.fillStyle(0xff6a3d).fillRect(19, 1, 5, 6);
+      g.fillStyle(0x3a444c).fillTriangle(0, 0, 5, 4, 0, 8);
+    });
     make('px', 2, 2, (g) => { g.fillStyle(0xffffff).fillRect(0, 0, 2, 2); });
     this.scene.start('title');
   }
