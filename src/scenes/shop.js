@@ -1,7 +1,7 @@
 import { SHOP } from '../config.js';
 import { Controls } from '../controls.js';
 import { load as loadSave, save } from '../save.js';
-import { play, toggleMute, unlockAudio } from '../sfx.js';
+import { play, toggleMute, unlockAudio, music } from '../sfx.js';
 import { artInfo, dress } from '../art.js';
 
 // Brinehaven port shop: spend tide pearls on upgrades and the Remora, then set out again.
@@ -42,6 +42,7 @@ export class ShopScene extends Phaser.Scene {
     });
     this.note = this.add.text(cx, H - 58, '', { fontFamily: 'monospace', fontSize: 14, color: '#ffd76a', stroke: '#000', strokeThickness: 3, align: 'center', wordWrap: { width: PW - 24 } }).setOrigin(0.5);
     this.add.text(cx, H - 20, 'Up/Down choose  Enter buy  Esc back', { fontFamily: 'monospace', fontSize: 13, color: '#e8f4ff' }).setOrigin(0.5);
+    music('shop');
     this.controls = new Controls(this, { touchUI: false });
     this.refresh();
     // ignore a key still held from docking for a moment

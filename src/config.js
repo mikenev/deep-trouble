@@ -37,6 +37,7 @@ export const DOCK = { x: 230, range: 120 };
 // reach it to fly a short run bombing the jellyfish that clog the shipping lane.
 export const BONUS = {
   first: 40, every: 70, moored: 22, // seconds until the first plane, between planes, and how long one waits
+  leaving: 5,                       // the last seconds it waits, with a LEAVING SOON cue
   time: 35, jellies: 6,             // length of the flight and how many jellies float at once
   planeY: 110, planeSpeed: 330, bombCooldown: 0.3, maxBombs: 3, bombGravity: 700,
   jellyScore: 30, pearlEvery: 2,    // a tide pearl for every second jelly bombed
@@ -45,3 +46,16 @@ export const BONUS = {
 // Physics boxes for creatures with long tails or fins, in frame pixels [x, y, w, h] facing right.
 // Real art carries its own "body" in the manifest; these fit the placeholders.
 export const BOXES = { ray: [12, 4, 66, 26] };
+
+// M4: Scarback, the scarred old shark that rules these waters. It shows up once you've been down
+// a while, with a warning first, and alternates two attacks: a straight lunge and a slow circle.
+export const BOSS = {
+  at: 100, again: 120, warn: 2.5,     // seconds into the dive, seconds until it returns after a win, warning length
+  hp: 36, hpGrow: 1.5,                // health, and how much tougher each return is
+  speed: 120, lungeSpeed: 520, windup: 0.7, lunge: 0.9, circle: 3.2, radius: 230, rest: 1.0,
+  damage: 1, hullDamage: 2, score: 500, pearls: 10,
+  size: [150, 60],                    // placeholder size; real art carries its own frame and body box
+  box: [30, 12, 104, 36],             // placeholder physics box (the body, not the tail) facing right
+};
+// a pack of barracuda shares one bite: after any of them hits, none can for this long
+export const PACK = { cooldown: 2.2 };

@@ -1,0 +1,30 @@
+{
+  "_doc": "Audio Dev's music loops and SFX. Each entry is a file name in assets/audio/ without its extension; the game loads .ogg where the browser plays it and .mp3 otherwise. An entry can also be {\"file\": \"...\", \"vol\": 0.8}. Anything not listed uses the built-in synth blip (SFX) or plays nothing (music).",
+  "music": {
+    "dive": "dive_loop",
+    "boss": "boss_loop",
+    "bonus": "bonus_flight_loop",
+    "shop": "shop_loop"
+  },
+  "sfx": {
+    "spear": "spear_fire",
+    "hit": "spear_hit",
+    "bossHit": "spear_hit",
+    "torpedo": "torpedo",
+    "bomb": "bomb_drop",
+    "splash": "splash",
+    "pearl": "pearl_pickup",
+    "hurt": "hurt",
+    "airLow": "air_low_warning",
+    "buy": "buy",
+    "nav": "menu_blip",
+    "board": "sub_board",
+    "roar": "boss_roar",
+    "over": "game_over_sting",
+    "victory": "victory_sting",
+    "engine": {
+      "file": "plane_engine_loop",
+      "vol": 0.8
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import { Controls } from '../controls.js';
+import { music } from '../sfx.js';
 
 const BEST = 'deeptrouble.best';
 
@@ -21,8 +22,9 @@ export class OverScene extends Phaser.Scene {
     // Wait a moment, then for every button to be let go, and only then take a fresh press.
     this.ready = false;
     this.waited = false;
-    this.time.delayedCall(1000, () => { this.waited = true; });
+    this.time.delayedCall(400, () => { this.waited = true; });
     this.input.on('pointerdown', () => this.go());
+    music('over');
   }
 
   arm() {
