@@ -19,8 +19,8 @@ export class TitleScene extends Phaser.Scene {
       // Art Dev's full-screen title card: logo, Scarback's shadow, the diver and the seabed
       this.logo = dress(this, this.add.image(0, 0, 'title'), 'title').setOrigin(0, 0);
       this.logo.setScale(W / this.logo.width, H / this.logo.height);
-      const k = W / this.logo.width, ps = art.pressStart || [240, 203];
-      if (artInfo(this, 'pressStart')) this.press = dress(this, this.add.sprite(ps[0] * k, ps[1] * k, 'pressStart'), 'pressStart');
+      const kx = W / this.logo.width, ky = H / this.logo.height, ps = art.pressStart || [240, 203];
+      if (artInfo(this, 'pressStart')) this.press = dress(this, this.add.sprite(ps[0] * kx, ps[1] * ky, 'pressStart'), 'pressStart');
       // the help sits on a dark strip over the seabed
       this.add.rectangle(0, H * 0.8, W, H * 0.2, 0x02080f, 0.62).setOrigin(0, 0);
       helpY = [0.83, 0.87, 0.91, 0.955];

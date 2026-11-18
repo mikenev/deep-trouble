@@ -78,7 +78,7 @@ export class Controls {
       if (act.visible && Phaser.Math.Distance.Between(p.x, p.y, act.x, act.y) <= 40) { t.action = true; return; }
       if (p.x < W / 2 && t.stickId < 0) { t.stickId = p.id; this._stick(p, cx, cy, R); }
       // FIRE is a real button (with a little slack round the edge), not the whole right half
-      else if (Phaser.Math.Distance.Between(p.x, p.y, fire.x, fire.y) <= this.fireReach) { t.fireId = p.id; t.fire = true; t.firePress = true; fire.setFillStyle(0xff7a3d, 0.6); }
+      else if (t.fireId < 0 && Phaser.Math.Distance.Between(p.x, p.y, fire.x, fire.y) <= this.fireReach) { t.fireId = p.id; t.fire = true; t.firePress = true; fire.setFillStyle(0xff7a3d, 0.6); }
     });
     s.input.on('pointermove', (p) => { if (p.id === t.stickId) this._stick(p, cx, cy, R); });
     const up = (p) => {

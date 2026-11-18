@@ -409,7 +409,7 @@ export class DiveScene extends Phaser.Scene {
   dropPlane() { this.plane?.cue?.destroy(); this.plane?.flag?.destroy(); this.plane?.destroy(); this.plane = null; }
 
   startBonus() {
-    if (this.flying || this.over || this.victoryPending) return;
+    if (this.flying || this.over || this.victoryPending || this.boss || this.warnTimer > 0) return;
     this.flying = true;
     this.dropPlane();
     this.spears.clear(true, true);
@@ -516,6 +516,8 @@ export class DiveScene extends Phaser.Scene {
 
   warnBoss() {
     this.warnTimer = BOSS.warn;
+    // a plane still moored when the warning sounds flies off: no bonus flights mid-fight
+    if (this.plane) { this.dropPlane(); this.planeTimer = BONUS.every; }
     this.flash('WARNING!\nSCARBACK IS COMING', BOSS.warn * 1000);
     play('warning');
     music('boss');
@@ -552,12 +554,12 @@ export class DiveScene extends Phaser.Scene {
     this.pop(s.x, s.y);
     if (artInfo(this, 'scarbackHurt')) {
       if (b.texture.key !== 'scarbackHurt') {
-        const back = b.texture.key, frame = b.frame.name;
         b.anims.stop(); b.setTexture('scarbackHurt'); plant(this, b, 'scarbackHurt');
         this.time.delayedCall(100, () => {
+          // back to whatever it's doing now (a mode change meanwhile already swapped it back)
           if (this.boss !== b || b.texture.key !== 'scarbackHurt') return;
-          b.setTexture(back, frame); plant(this, b, back);
-          if (back === 'scarback') b.play('scarback-anim');
+          if (b.mode === 'lunge') { b.setTexture('scarbackBite', 1); plant(this, b, 'scarbackBite'); }
+          else this.bossLook('scarback');
         });
       }
     } else if (b.mode !== 'windup') { b.setTintFill(0xffffff); this.time.delayedCall(70, () => b.active && b.mode !== 'windup' && b.clearTint()); }

@@ -36,7 +36,7 @@ function fetchAll() {
         .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
         .then((b) => new Promise((ok, no) => ctx.decodeAudioData(b, ok, no)))
         .then((buf) => { buffers[id] = buf; if (kind === 'music' && name === wanted && current?.name !== name) startMusic(); })
-        .catch(() => { buffers[id] = false; console.info(`[deep-trouble] no sound for ${id}, using the fallback`); });
+        .catch(() => { buffers[id] = false; console.info(`[deep-trouble] no sound for ${id}, using the fallback`); if (kind === 'music' && name === wanted) startMusic(); });
     }
   }
 }
@@ -76,7 +76,7 @@ function startMusic() {
   if (!ctx || ctx.state !== 'running') return;
   if (current && current.name === wanted) return;
   const buf = wanted && buffers[`music:${wanted}`];
-  if (wanted && !buf) return; // still loading (or none): keep what's playing until it's in
+  if (wanted && buf == null) return; // still loading: keep what's playing until it's in (a failed file means silence)
   const t = ctx.currentTime;
   if (current) { const old = current; old.gain.gain.setTargetAtTime(0, t, 0.15); old.src.stop(t + 0.8); current = null; }
   if (!buf) return;
