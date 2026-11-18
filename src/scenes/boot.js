@@ -111,6 +111,26 @@ export class BootScene extends Phaser.Scene {
       g.fillStyle(0xff6a3d).fillRect(19, 1, 5, 6);
       g.fillStyle(0x3a444c).fillTriangle(0, 0, 5, 4, 0, 8);
     });
+    // M3 placeholders: the seaplane, its bomb, a jellyfish floating on the surface and a splash
+    make('plane', 72, 30, (g) => {
+      g.fillStyle(0xe8e2d0).fillEllipse(34, 13, 58, 14);
+      g.fillStyle(0xc0392b).fillRect(20, 4, 30, 5).fillTriangle(0, 4, 10, 13, 0, 17);
+      g.fillStyle(0x9fe6ff).fillRect(44, 8, 8, 5);
+      g.fillStyle(0x555b66).fillRect(64, 6, 3, 14);
+      g.lineStyle(2, 0x555b66).lineBetween(22, 19, 18, 26).lineBetween(44, 19, 48, 26);
+      g.fillStyle(0xf1e3c6).fillRoundedRect(10, 25, 50, 5, 2);
+    });
+    make('bomb', 12, 18, (g) => {
+      g.fillStyle(0x2b2f3a).fillEllipse(6, 11, 10, 14);
+      g.fillStyle(0x6c7a86).fillTriangle(1, 0, 11, 0, 6, 6);
+    });
+    make('jellySurface', 40, 22, (g) => {
+      g.fillStyle(0xf28ad8, 0.95).fillEllipse(20, 12, 38, 20);
+      g.fillStyle(0xf7b8ea).fillEllipse(14, 8, 10, 5);
+    });
+    make('splash', 40, 30, (g) => {
+      g.fillStyle(0xe8fbff, 0.9).fillTriangle(4, 30, 12, 4, 18, 30).fillTriangle(14, 30, 20, 0, 26, 30).fillTriangle(22, 30, 30, 6, 36, 30);
+    });
     make('px', 2, 2, (g) => { g.fillStyle(0xffffff).fillRect(0, 0, 2, 2); });
     this.scene.start('title');
   }

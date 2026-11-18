@@ -1,28 +1,39 @@
 import { unlockAudio } from './sfx.js';
 
+// Fire and confirm keys held right now, tracked for the whole page: a new scene's own key objects
+// never saw a key that went down in the previous scene, so they can't tell it's still held.
+const heldKeys = new Set();
+const HOLD = new Set(['Space', 'KeyZ', 'Enter', 'NumpadEnter']);
+window.addEventListener('keydown', (e) => { if (HOLD.has(e.code) || e.keyCode === 23) heldKeys.add(e.code || e.keyCode); });
+window.addEventListener('keyup', (e) => heldKeys.delete(e.code || e.keyCode));
+window.addEventListener('blur', () => heldKeys.clear());
+
 // One input state built from keyboard, touch, gamepad and the Fire TV remote.
 // Each frame: x and y in -1..1, fire held, and one-frame presses for fire, confirm, action
 // (board or leave the Remora, dock), menu up/down, back and mute.
 export class Controls {
-  constructor(scene, { touchUI = true } = {}) {
+  constructor(scene, { touchUI = true, playAction = false } = {}) {
     this.scene = scene;
+    // in the dive, Fire TV Play/Pause is the context key (board, leave, dock) and pauses only when
+    // there's nothing to do; everywhere else it simply means back
+    this.playAction = playAction;
     const K = Phaser.Input.Keyboard.KeyCodes;
     this.keys = scene.input.keyboard.addKeys({
       up: K.UP, down: K.DOWN, left: K.LEFT, right: K.RIGHT,
       w: K.W, a: K.A, s: K.S, d: K.D,
       space: K.SPACE, z: K.Z, enter: K.ENTER, esc: K.ESC, back: K.BACKSPACE, m: K.M, e: K.E,
     }, true, false);
-    this.state = { x: 0, y: 0, fire: false, firePressed: false, confirm: false, action: false, enter: false, enterPressed: false, up: false, down: false, back: false, mute: false };
+    this.state = { x: 0, y: 0, fire: false, firePressed: false, confirm: false, action: false, enter: false, enterPressed: false, playPause: false, held: false, up: false, down: false, back: false, mute: false };
     this._prev = {};
-    this._queued = { back: false, mute: false, action: false };
+    this._queued = { back: false, mute: false, action: false, play: false };
     this.touch = { x: 0, y: 0, fire: false, back: false, mute: false, action: false, stickId: -1, fireId: -1 };
 
     // Fire TV remote keys that Phaser has no names for: Back (4), Menu (82), Play/Pause (179)
     this._onKey = (e) => {
       unlockAudio();
       if (e.keyCode === 4) { this._queued.back = true; e.preventDefault(); }
-      if (e.keyCode === 179) { this._queued.back = true; e.preventDefault(); }
-      if (e.keyCode === 82) { this._queued.action = true; e.preventDefault(); } // Menu: sub / dock
+      if (e.keyCode === 179) { this._queued.play = true; e.preventDefault(); } // Play/Pause: sub / dock in the dive
+      if (e.keyCode === 82) { this._queued.back = true; e.preventDefault(); } // Menu: pause
     };
     window.addEventListener('keydown', this._onKey);
     this._jd = {};
@@ -80,6 +91,15 @@ export class Controls {
     this._act[1].setVisible(!!label).setText(label || '');
   }
 
+  // forget presses that piled up while the scene was asleep (the bonus flight runs on top of the dive)
+  reset() {
+    this._jd = {};
+    this._queued = { back: false, mute: false, action: false, play: false };
+    Object.assign(this.touch, { x: 0, y: 0, fire: false, firePress: false, back: false, mute: false, action: false, stickId: -1, fireId: -1 });
+    this._knob?.setPosition(96, this.scene.scale.height - 96);
+    this.scene.input.keyboard?.resetKeys();
+  }
+
   _stick(p, cx, cy, R) {
     let dx = p.x - cx, dy = p.y - cy;
     const d = Math.hypot(dx, dy);
@@ -120,10 +140,14 @@ export class Controls {
     // Enter (Fire TV Select) fires in the dive unless a dock or board prompt is up; the dive scene decides
     st.enter = k.enter.isDown; st.enterPressed = !!jd.enter;
     st.action = jd.e || padAct || !!t.action || this._queued.action;
+    st.playPause = this.playAction && this._queued.play;
     st.up = jd.up || padUp; st.down = jd.down || padDown;
-    st.back = jd.esc || jd.back || padBack || t.back || this._queued.back;
+    st.back = jd.esc || jd.back || padBack || t.back || this._queued.back || (!this.playAction && this._queued.play);
     st.mute = jd.m || t.mute;
-    t.firePress = false; t.back = false; t.mute = false; t.action = false; this._queued.back = false; this._queued.action = false;
+    // anything that fires or confirms still held down (used to make a fresh press count after death)
+    st.held = !!(heldKeys.size || st.fire || k.enter.isDown || (pad && pad.A) || this.scene.input.activePointer?.isDown);
+    t.firePress = false; t.back = false; t.mute = false; t.action = false;
+    this._queued.back = false; this._queued.action = false; this._queued.play = false;
     if (st.firePressed || x || y) unlockAudio();
     return st;
   }

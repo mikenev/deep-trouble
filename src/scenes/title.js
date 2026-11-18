@@ -26,8 +26,11 @@ export class TitleScene extends Phaser.Scene {
       t.on('pointerdown', () => { unlockAudio(); this.sel = i; this.go(); });
       return t;
     });
-    this.add.text(W / 2, H * 0.74, 'Move: arrows or WASD   Fire: Space or Z   Sub/dock: Enter   Pause: Esc   Mute: M', { fontFamily: 'monospace', fontSize: 15, color: '#8fc3dd' }).setOrigin(0.5);
-    this.add.text(W / 2, H * 0.79, 'Touch: left stick, FIRE and the SUB/DOCK button   Gamepad: stick, A fire, Y sub/dock', { fontFamily: 'monospace', fontSize: 15, color: '#8fc3dd' }).setOrigin(0.5);
+    const help = { fontFamily: 'monospace', fontSize: 15, color: '#8fc3dd' };
+    this.add.text(W / 2, H * 0.72, 'Move: arrows or WASD   Fire: Space or Z   Sub/dock: E (Enter at a prompt)   Pause: Esc   Mute: M', help).setOrigin(0.5);
+    this.add.text(W / 2, H * 0.77, 'Touch: left stick, FIRE and the SUB/DOCK button   Gamepad: stick, A fire, Y sub/dock', help).setOrigin(0.5);
+    this.add.text(W / 2, H * 0.82, 'Fire TV: Select fires (docks or boards at a prompt), Play/Pause boards or leaves the sub, Menu pauses', help).setOrigin(0.5);
+    this.add.text(W / 2, H * 0.88, 'Watch for a moored seaplane at the surface: reach it for a bonus flight', { ...help, color: '#ffd76a' }).setOrigin(0.5);
     this.controls = new Controls(this, { touchUI: false });
     this.refresh();
   }

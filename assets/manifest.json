@@ -65,13 +65,19 @@
     },
     "ray": {
       "file": "DT_Stingray.png",
-      "frameWidth": 32,
-      "frameHeight": 16,
+      "frameWidth": 48,
+      "frameHeight": 24,
       "frames": 2,
       "fps": 7,
       "origin": [
-        18,
-        8
+        35,
+        12
+      ],
+      "body": [
+        24,
+        3,
+        22,
+        18
       ]
     },
     "spear": {
@@ -159,6 +165,69 @@
         8,
         8
       ]
+    },
+    "plane": {
+      "file": "DT_Plane.png",
+      "frameWidth": 48,
+      "frameHeight": 24,
+      "frames": 3,
+      "fps": 15,
+      "origin": [
+        24,
+        10
+      ],
+      "drop": [
+        22,
+        20
+      ]
+    },
+    "bomb": {
+      "file": "DT_Bomb.png",
+      "frameWidth": 8,
+      "frameHeight": 12,
+      "frames": 2,
+      "fps": 8,
+      "origin": [
+        3,
+        6
+      ]
+    },
+    "jellySurface": {
+      "file": "DT_JellySurface.png",
+      "frameWidth": 24,
+      "frameHeight": 16,
+      "frames": 3,
+      "fps": 5,
+      "origin": [
+        12,
+        11
+      ],
+      "body": [
+        4,
+        4,
+        16,
+        9
+      ]
+    },
+    "splash": {
+      "file": "DT_Splash.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 4,
+      "fps": 14,
+      "origin": [
+        16,
+        27
+      ],
+      "once": true
+    },
+    "skysea": {
+      "file": "DT_SkySea_BG.png",
+      "origin": [
+        0,
+        0
+      ],
+      "sea": 214
     }
   }
 }

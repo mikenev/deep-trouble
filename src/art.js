@@ -41,3 +41,13 @@ export function framePoint(obj, px, py) {
   const c = Math.cos(obj.rotation), s = Math.sin(obj.rotation);
   return { x: obj.x + dx * c - dy * s, y: obj.y + dx * s + dy * c };
 }
+
+// Fit the physics body to a box [x, y, w, h] in frame pixels (the art's "body" or a placeholder box),
+// mirrored when the sprite is flipped so a long tail never counts as a hit.
+export function setBox(scene, obj, key, fallback) {
+  const box = artInfo(scene, key)?.body || (!artInfo(scene, key) && fallback);
+  if (!box || !obj.body) return false;
+  const [x, y, w, h] = box, fw = obj.frame.realWidth;
+  obj.body.setSize(w, h, false).setOffset(obj.flipX ? fw - x - w : x, y);
+  return true;
+}
