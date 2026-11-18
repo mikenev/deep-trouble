@@ -12,7 +12,7 @@ export function dress(scene, obj, key) {
   if (!a) { obj.setScale(1).setOrigin(0.5); return obj; }
   const fw = a.frameWidth || obj.frame.realWidth, fh = a.frameHeight || obj.frame.realHeight;
   obj.setScale(a.scale);
-  if (a.origin) obj.setOrigin(a.origin[0] / fw, a.origin[1] / fh);
+  plant(scene, obj, key);
   if (a.frames > 1 && !a.once && obj.play) obj.play(`${key}-anim`);
   return obj;
 }
@@ -22,4 +22,22 @@ export function fitBody(obj, fx = 0.8, fy = 0.7) {
   const w = obj.frame.realWidth, h = obj.frame.realHeight;
   obj.body.setSize(w * fx, h * fy);
   return obj;
+}
+
+// Sets the art origin, mirrored when the sprite is flipped, so the body stays put when it turns.
+export function plant(scene, obj, key) {
+  const a = artInfo(scene, key);
+  if (!a?.origin) return obj;
+  const fw = a.frameWidth || obj.frame.realWidth, fh = a.frameHeight || obj.frame.realHeight;
+  const ox = obj.flipX ? fw - a.origin[0] : a.origin[0];
+  return obj.setOrigin(ox / fw, a.origin[1] / fh);
+}
+
+// World position of a pixel in the sprite's frame (art space), honouring origin, scale, flip and angle.
+export function framePoint(obj, px, py) {
+  const fw = obj.frame.realWidth, x = obj.flipX ? fw - px : px; // a flipped sprite mirrors its frame
+  const dx = (x - obj.originX * fw) * obj.scaleX;
+  const dy = (py - obj.originY * obj.frame.realHeight) * obj.scaleY;
+  const c = Math.cos(obj.rotation), s = Math.sin(obj.rotation);
+  return { x: obj.x + dx * c - dy * s, y: obj.y + dx * s + dy * c };
 }
