@@ -1,7 +1,7 @@
 import { VIEW, WORLD, DIVER, SPEAR, CREATURES, SPAWN } from '../config.js';
 import { Controls } from '../controls.js';
 import { play, toggleMute, isMuted } from '../sfx.js';
-import { dress, fitBody, artInfo } from '../art.js';
+import { dress, fitBody, artInfo, plant, framePoint } from '../art.js';
 
 const TYPES = Object.keys(CREATURES);
 
@@ -29,7 +29,8 @@ export class DiveScene extends Phaser.Scene {
     this.diver = this.physics.add.sprite(260, WORLD.surface + 60, 'diver').setDepth(10);
     dress(this, this.diver, 'diver');
     this.diver.setCollideWorldBounds(true);
-    if (artInfo(this, 'diver')) this.diver.body.setSize(24, 14).setOffset(4, 10);
+    // the prone diver fills about x 1-31, y 7-20 of its 32x32 frame; keep the box to the torso and legs
+    if (artInfo(this, 'diver')) this.diver.body.setSize(26, 12).setOffset(3, 8);
     else this.diver.body.setSize(44, 16).setOffset(6, 4);
     this.diver.on('animationcomplete-diverAttack-anim', () => dress(this, this.diver.setTexture('diver'), 'diver'));
     this.facing = 1;
@@ -151,13 +152,29 @@ export class DiveScene extends Phaser.Scene {
   }
 
   fire() {
+    const d = this.diver, atk = artInfo(this, 'diverAttack');
+    if (!atk) { this.launchSpear(d.x + this.facing * 30, d.y + 2); return; }
+    // play the thrust and let the spear leave the muzzle on the fire frame
+    d.setTexture('diverAttack'); dress(this, d, 'diverAttack');
+    d.off('animationupdate', this._onAtk);
+    this._onAtk = (anim, frame) => {
+      if (anim.key !== 'diverAttack-anim' || frame.textureFrame !== atk.fireFrame) return;
+      d.off('animationupdate', this._onAtk);
+      const m = framePoint(d, atk.muzzle[0], atk.muzzle[1]);
+      this.launchSpear(m.x, m.y);
+    };
+    d.on('animationupdate', this._onAtk);
+    d.play('diverAttack-anim');
+  }
+
+  launchSpear(x, y) {
+    if (this.over) return;
     const d = this.diver;
-    const s = this.spears.create(d.x + this.facing * 30, d.y + 2, 'spear');
+    const s = this.spears.create(x, y, 'spear');
     dress(this, s, 'spear');
     if (this.facing < 0 && artInfo(this, 'spear')) s.setOrigin(1 - s.originX, s.originY);
     s.setFlipX(this.facing < 0).setVelocityX(this.facing * SPEAR.speed + d.body.velocity.x * 0.3).setDepth(11);
     fitBody(s, 1, 0.8);
-    if (artInfo(this, 'diverAttack')) { d.setTexture('diverAttack'); dress(this, d, 'diverAttack'); d.play('diverAttack-anim'); }
     s.life = SPEAR.life;
     play('spear');
   }
@@ -224,7 +241,7 @@ export class DiveScene extends Phaser.Scene {
       const sp = v.length();
       if (sp > DIVER.maxSpeed) v.scale(DIVER.maxSpeed / sp);
       if (c.x > 0.2) this.facing = 1; else if (c.x < -0.2) this.facing = -1;
-      d.setFlipX(this.facing < 0);
+      if (d.flipX !== (this.facing < 0)) plant(this, d.setFlipX(this.facing < 0), d.texture.key);
       d.setAngle(Phaser.Math.Clamp(d.body.velocity.y * 0.06, -14, 14) * this.facing);
       this.fireTimer -= dt;
       if (c.fire && this.fireTimer <= 0) { this.fire(); this.fireTimer = SPEAR.cooldown; }
