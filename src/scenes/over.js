@@ -37,6 +37,6 @@ export class OverScene extends Phaser.Scene {
     const c = this.controls.update();
     if (!this.ready) { if (this.waited && !c.held) this.arm(); return; }
     if (c.confirm) this.go();
-    if (c.back && this.ready) { this.left = true; this.scene.start('title'); }
+    if (c.back && this.ready && !this.left) { this.left = true; this.scene.start('title'); }
   }
 }

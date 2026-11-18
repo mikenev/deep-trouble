@@ -31,6 +31,7 @@ export class Controls {
     // Fire TV remote keys that Phaser has no names for: Back (4), Menu (82), Play/Pause (179)
     this._onKey = (e) => {
       unlockAudio();
+      if (e.repeat) return; // a held remote button mustn't toggle pause or the sub over and over
       if (e.keyCode === 4) { this._queued.back = true; e.preventDefault(); }
       if (e.keyCode === 179) { this._queued.play = true; e.preventDefault(); } // Play/Pause: sub / dock in the dive
       if (e.keyCode === 82) { this._queued.back = true; e.preventDefault(); } // Menu: pause
@@ -95,6 +96,8 @@ export class Controls {
   reset() {
     this._jd = {};
     this._queued = { back: false, mute: false, action: false, play: false };
+    // a pad button still held from the other scene isn't a new press
+    this._prev = { padFire: true, padBack: true, padAct: true, padUp: true, padDown: true };
     Object.assign(this.touch, { x: 0, y: 0, fire: false, firePress: false, back: false, mute: false, action: false, stickId: -1, fireId: -1 });
     this._knob?.setPosition(96, this.scene.scale.height - 96);
     this.scene.input.keyboard?.resetKeys();

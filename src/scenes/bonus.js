@@ -23,6 +23,10 @@ export class BonusScene extends Phaser.Scene {
     this.armed = false;
     this.facing = 1;
     this.elapsed = 0;
+    this.vx = 0;
+    // the physics world and tweens outlive a stopped scene, and end() paused them last time
+    this.physics.resume();
+    this.tweens.resumeAll();
 
     // sky and sea: Art Dev's backdrop scaled to the screen height and tiled across, or a drawn one
     const bg = artInfo(this, 'skysea');

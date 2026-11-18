@@ -76,6 +76,8 @@ export class DiveScene extends Phaser.Scene {
     }).setDepth(9);
 
     this.controls = new Controls(this, { playAction: true });
+    // scene events outlive a restart, so swap rather than stack the listener
+    this.events.off('wake');
     this.events.on('wake', (sys, data) => this.backFromBonus(data?.bonus));
     this.buildHud();
     // a few creatures waiting out in the water from the start
@@ -359,7 +361,7 @@ export class DiveScene extends Phaser.Scene {
   startBonus() {
     if (this.flying || this.over) return;
     this.flying = true;
-    this.plane.destroy(); this.plane = null;
+    this.plane?.destroy(); this.plane = null;
     this.spears.clear(true, true);
     this.diver.off('animationupdate', this._onAtk);
     play('board');
