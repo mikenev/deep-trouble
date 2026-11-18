@@ -32,3 +32,16 @@ export const REMORA = {
 };
 export const TORPEDO = { speed0: 180, speed: 560, accel: 900, cooldown: 0.55, life: 1.6, damage: 3 };
 export const DOCK = { x: 230, range: 120 };
+
+// M3: the seaplane bonus flight. A seaplane moors at the surface every so often during a dive;
+// reach it to fly a short run bombing the jellyfish that clog the shipping lane.
+export const BONUS = {
+  first: 40, every: 70, moored: 22, // seconds until the first plane, between planes, and how long one waits
+  time: 35, jellies: 6,             // length of the flight and how many jellies float at once
+  planeY: 110, planeSpeed: 330, bombCooldown: 0.3, maxBombs: 3, bombGravity: 700,
+  jellyScore: 30, pearlEvery: 2,    // a tide pearl for every second jelly bombed
+  sharp: 10, sharpPearls: 3,        // bonus pearls for bombing at least this many
+};
+// Physics boxes for creatures with long tails or fins, in frame pixels [x, y, w, h] facing right.
+// Real art carries its own "body" in the manifest; these fit the placeholders.
+export const BOXES = { ray: [12, 4, 66, 26] };

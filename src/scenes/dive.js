@@ -1,8 +1,8 @@
-import { VIEW, WORLD, DIVER, SPEAR, CREATURES, SPAWN, PEARL, REMORA, TORPEDO, DOCK } from '../config.js';
+import { VIEW, WORLD, DIVER, SPEAR, CREATURES, SPAWN, PEARL, REMORA, TORPEDO, DOCK, BONUS, BOXES } from '../config.js';
 import { load as loadSave, addPearls } from '../save.js';
 import { Controls } from '../controls.js';
 import { play, toggleMute, isMuted } from '../sfx.js';
-import { dress, fitBody, artInfo, plant, framePoint } from '../art.js';
+import { dress, fitBody, artInfo, plant, framePoint, setBox } from '../art.js';
 
 const TYPES = Object.keys(CREATURES);
 
@@ -28,6 +28,10 @@ export class DiveScene extends Phaser.Scene {
     this.paused = false;
     this.over = false;
     this.wasUnder = false;
+    // the seaplane that takes you on the bonus flight
+    this.planeTimer = BONUS.first;
+    this.plane = null;
+    this.flying = false;
 
     this.buildWorld();
 
@@ -71,7 +75,10 @@ export class DiveScene extends Phaser.Scene {
       speedY: { min: -70, max: -40 }, speedX: { min: -10, max: 10 }, lifespan: 1600, alpha: { start: 0.9, end: 0 }, emitting: false,
     }).setDepth(9);
 
-    this.controls = new Controls(this);
+    this.controls = new Controls(this, { playAction: true });
+    // scene events outlive a restart, so swap rather than stack the listener
+    this.events.off('wake');
+    this.events.on('wake', (sys, data) => this.backFromBonus(data?.bonus));
     this.buildHud();
     // a few creatures waiting out in the water from the start
     for (let i = 0; i < 4; i++) this.spawn(600 + i * 280);
@@ -127,7 +134,7 @@ export class DiveScene extends Phaser.Scene {
 
   setPaused(p) {
     this.paused = p;
-    if (p) { this.physics.pause(); this.tweens.pauseAll(); this.tweens.killTweensOf(this.msg); this.msg.setText('PAUSED\nEsc, Back or II to resume').setAlpha(1); }
+    if (p) { this.physics.pause(); this.tweens.pauseAll(); this.tweens.killTweensOf(this.msg); this.msg.setText('PAUSED\nEsc, Back, Menu or II to resume').setAlpha(1); }
     else { this.physics.resume(); this.tweens.resumeAll(); this.msg.setText('').setAlpha(0); }
   }
 
@@ -151,7 +158,7 @@ export class DiveScene extends Phaser.Scene {
     const e = this.enemies.create(x, y, type);
     e.kind = type; e.hp = C.hp; e.baseY = y; e.t = Math.random() * 10; e.dir = x > d.x ? -1 : 1; e.dash = 0; e.rest = 0;
     dress(this, e, type);
-    fitBody(e);
+    if (!setBox(this, e, type, BOXES[type])) fitBody(e);
     e.setDepth(8);
     return e;
   }
@@ -178,7 +185,10 @@ export class DiveScene extends Phaser.Scene {
     }
     if (e.x < 30) e.dir = 1; else if (e.x > WORLD.w - 30) e.dir = -1;
     // sprites face right; turn them toward where they swim (jellies and crabs have no front)
-    if (e.kind === 'barracuda' || e.kind === 'ray') e.setFlipX(e.dir < 0);
+    if ((e.kind === 'barracuda' || e.kind === 'ray') && e.flipX !== (e.dir < 0)) {
+      plant(this, e.setFlipX(e.dir < 0), e.kind);
+      setBox(this, e, e.kind, BOXES[e.kind]);
+    }
     if (Math.abs(e.x - d.x) > 1500) e.destroy();
   }
 
@@ -316,6 +326,62 @@ export class DiveScene extends Phaser.Scene {
     this.scene.start('shop', { score: this.score, from: 'dive' });
   }
 
+  // the seaplane: moors at the surface near you every so often; reach it for the bonus flight
+  updatePlane(dt) {
+    if (this.over) return;
+    const pc = this.pc;
+    if (!this.plane) {
+      this.planeTimer -= dt;
+      if (this.planeTimer <= 0) this.spawnPlane();
+      return;
+    }
+    const p = this.plane;
+    p.life -= dt;
+    p.y = WORLD.surface - 10 + Math.sin(this.elapsed * 3) * 3;
+    if (p.life < 4) p.setAlpha(Math.sin(this.elapsed * 16) > 0 ? 1 : 0.35);
+    if (p.life <= 0) { p.destroy(); this.plane = null; this.planeTimer = BONUS.every; return; }
+    if (Math.abs(pc.x - p.x) < 70 && pc.y < WORLD.surface + 60) this.startBonus();
+  }
+
+  spawnPlane(x) {
+    const pc = this.pc;
+    if (x === undefined) {
+      const side = pc.x > WORLD.w - 700 ? -1 : pc.x < 700 ? 1 : (Math.random() < 0.5 ? -1 : 1);
+      x = pc.x + side * Phaser.Math.Between(320, 520);
+    }
+    x = Phaser.Math.Clamp(x, DOCK.x + DOCK.range + 120, WORLD.w - 80); // never on top of the boat
+    const p = this.plane = this.add.sprite(x, WORLD.surface - 10, 'plane').setDepth(6);
+    dress(this, p, 'plane');
+    p.life = BONUS.moored;
+    this.flash('A SEAPLANE IS MOORED!\nReach it at the surface for a bonus flight', 1600);
+    play('board');
+    return p;
+  }
+
+  startBonus() {
+    if (this.flying || this.over) return;
+    this.flying = true;
+    this.plane?.destroy(); this.plane = null;
+    this.spears.clear(true, true);
+    this.diver.off('animationupdate', this._onAtk);
+    play('board');
+    this.scene.launch('bonus', { score: this.score });
+    this.scene.sleep();
+  }
+
+  backFromBonus(r) {
+    this.flying = false;
+    this.controls.reset();
+    this.planeTimer = BONUS.every;
+    // a moment's grace while you find your bearings again
+    this.invuln = Math.max(this.invuln, 1.5);
+    if (!r) return;
+    this.score += r.score;
+    this.pearlText.setText(String(loadSave().pearls));
+    this.save = loadSave();
+    this.flash(`BONUS FLIGHT +${r.score}`, 1200);
+  }
+
   pop(x, y) {
     if (!artInfo(this, 'hit')) return;
     const h = dress(this, this.add.sprite(x, y, 'hit').setDepth(21), 'hit');
@@ -348,26 +414,28 @@ export class DiveScene extends Phaser.Scene {
   update(time, deltaMs) {
     const c = this.controls.update();
     if (c.mute) this.flash(toggleMute() ? 'MUTED' : 'SOUND ON', 600);
-    if (c.back && !this.over) this.setPaused(!this.paused);
-    if (this.paused) return;
-    const dt = Math.min(deltaMs, 50) / 1000;
-    this.elapsed += dt;
     // context action: dock at the boat, or board / leave the Remora.
-    // E, Y, Menu or the touch button always act; Enter (Fire TV Select) acts at a dock or board
-    // prompt and otherwise fires, so it never does both.
+    // E, Y, Fire TV Play/Pause or the touch button always act; Enter (Fire TV Select) acts at a
+    // dock or board prompt and otherwise fires, so it never does both.
     let act = null;
-    if (!this.over) {
+    if (!this.over && !this.paused) {
       if (this.nearDock()) act = 'DOCK';
       else if (this.inSub) act = 'EXIT';
       else if (this.nearSub()) act = 'BOARD';
     }
+    // Play/Pause acts when there's something to act on, and otherwise pauses (or resumes)
+    const playAct = c.playPause && !!act;
+    if ((c.back || (c.playPause && !playAct)) && !this.over) this.setPaused(!this.paused);
+    if (this.paused) return;
+    const dt = Math.min(deltaMs, 50) / 1000;
+    this.elapsed += dt;
     const prompt = act === 'DOCK' || act === 'BOARD';
     this.controls.setAction(act);
     const touch = this.controls.touchUI?.visible;
     this.hint.setText(act === 'DOCK' ? `${touch ? 'tap DOCK' : 'Enter'}: dock at Brinehaven port`
       : act === 'BOARD' ? `${touch ? 'tap BOARD' : 'Enter'}: board the Remora`
-      : act === 'EXIT' && !touch ? 'E: leave the Remora' : '');
-    if (act && (c.action || (prompt && c.enterPressed))) {
+      : act === 'EXIT' && !touch ? 'E or Play/Pause: leave the Remora' : '');
+    if (act && (c.action || playAct || (prompt && c.enterPressed))) {
       if (act === 'DOCK') { this.dock(); return; }
       this.setInSub(act === 'BOARD');
     }
@@ -399,6 +467,9 @@ export class DiveScene extends Phaser.Scene {
       if (p.life < 3) p.setAlpha(Math.sin(this.elapsed * 20) > 0 ? 1 : 0.3);
       if (p.life <= 0) p.destroy();
     }
+
+    this.updatePlane(dt);
+    if (this.flying) return;
 
     this.spawnTimer -= dt;
     const cap = Math.min(SPAWN.max, 4 + Math.floor(this.elapsed / 20));
