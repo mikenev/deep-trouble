@@ -17,7 +17,8 @@ export class TitleScene extends Phaser.Scene {
     this.add.text(W / 2, H * 0.2, 'DEEP TROUBLE', { fontFamily: 'monospace', fontSize: 64, color: '#ffd76a', stroke: '#031019', strokeThickness: 8 }).setOrigin(0.5);
     this.add.text(W / 2, H * 0.32, 'The waters off Brinehaven', { fontFamily: 'monospace', fontSize: 22, color: '#bfe9ff' }).setOrigin(0.5);
     const sv = loadSave();
-    this.add.image(W / 2 - 70, H * 0.4, 'pearl').setScale(1.6);
+    if (this.textures.exists('shopIcons') && this.registry.get('art')?.shopIcons) this.add.image(W / 2 - 70, H * 0.4, 'shopIcons', 3).setScale(1.6);
+    else this.add.image(W / 2 - 70, H * 0.4, 'pearl').setScale(1.6);
     this.add.text(W / 2 - 54, H * 0.4, `${sv.pearls} tide pearls${sv.remora ? '   Remora owned' : ''}`, { fontFamily: 'monospace', fontSize: 18, color: '#f3e9ff' }).setOrigin(0, 0.5);
     this.items = MENU.map(([key, label], i) => {
       const t = this.add.text(W / 2, H * 0.52 + i * 46, label, { fontFamily: 'monospace', fontSize: 28, color: '#ffffff', backgroundColor: '#0008', padding: { x: 16, y: 6 } })

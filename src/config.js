@@ -24,7 +24,7 @@ export const PEARL = { drop: { jelly: [0.4, 1], crab: [0.5, 1], barracuda: [0.6,
 export const SHOP = {
   spear:  { name: 'Barbed spear tip', desc: '+1 spear damage', costs: [12, 25] },
   air:    { name: 'Bigger air tank',  desc: '+50 air',         costs: [8, 18] },
-  remora: { name: 'The Remora',       desc: 'Mini sub with torpedoes and an armored hull', costs: [60] },
+  remora: { name: 'The Remora',       desc: 'Mini sub, torpedoes, armored hull', costs: [60] },
 };
 export const REMORA = {
   accel: 520, maxSpeed: 300, water: 1.6, hull: 6, hurtInvuln: 1.0, airRefill: 12,

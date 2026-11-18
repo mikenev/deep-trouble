@@ -2,14 +2,163 @@
   "_note": "Art Dev's sprites in assets/sprites. A key that isn't listed (or fails to load) uses the built-in placeholder shape. frameWidth makes it a sheet; fps and frames make an animation; origin is in source pixels.",
   "scale": 2,
   "sprites": {
-    "diver":       { "file": "DT_Diver_Swim.png",   "frameWidth": 32, "frameHeight": 32, "frames": 4, "fps": 8,  "origin": [15, 15] },
-    "diverAttack": { "file": "DT_Diver_Attack.png", "frameWidth": 32, "frameHeight": 32, "frames": 3, "fps": 12, "origin": [15, 15], "muzzle": [31, 16], "fireFrame": 1, "once": true },
-    "jelly":       { "file": "DT_Jellyfish.png",    "frameWidth": 16, "frameHeight": 24, "frames": 2, "fps": 5,  "origin": [8, 8] },
-    "crab":        { "file": "DT_Crab.png",         "frameWidth": 16, "frameHeight": 16, "frames": 2, "fps": 7,  "origin": [8, 13] },
-    "barracuda":   { "file": "DT_Barracuda.png",    "frameWidth": 32, "frameHeight": 16, "frames": 2, "fps": 8,  "origin": [16, 7] },
-    "ray":         { "file": "DT_Stingray.png",     "frameWidth": 32, "frameHeight": 16, "frames": 2, "fps": 7,  "origin": [18, 8] },
-    "spear":       { "file": "DT_Spear.png",        "origin": [1, 4] },
-    "hit":         { "file": "DT_Hit.png",          "frameWidth": 16, "frameHeight": 16, "frames": 4, "fps": 14, "origin": [8, 8], "once": true },
-    "seabed":      { "file": "DT_Seabed.png" }
+    "diver": {
+      "file": "DT_Diver_Swim.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 4,
+      "fps": 8,
+      "origin": [
+        15,
+        15
+      ]
+    },
+    "diverAttack": {
+      "file": "DT_Diver_Attack.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 3,
+      "fps": 12,
+      "origin": [
+        15,
+        15
+      ],
+      "muzzle": [
+        31,
+        16
+      ],
+      "fireFrame": 1,
+      "once": true
+    },
+    "jelly": {
+      "file": "DT_Jellyfish.png",
+      "frameWidth": 16,
+      "frameHeight": 24,
+      "frames": 2,
+      "fps": 5,
+      "origin": [
+        8,
+        8
+      ]
+    },
+    "crab": {
+      "file": "DT_Crab.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": 2,
+      "fps": 7,
+      "origin": [
+        8,
+        13
+      ]
+    },
+    "barracuda": {
+      "file": "DT_Barracuda.png",
+      "frameWidth": 32,
+      "frameHeight": 16,
+      "frames": 2,
+      "fps": 8,
+      "origin": [
+        16,
+        7
+      ]
+    },
+    "ray": {
+      "file": "DT_Stingray.png",
+      "frameWidth": 32,
+      "frameHeight": 16,
+      "frames": 2,
+      "fps": 7,
+      "origin": [
+        18,
+        8
+      ]
+    },
+    "spear": {
+      "file": "DT_Spear.png",
+      "origin": [
+        1,
+        4
+      ]
+    },
+    "hit": {
+      "file": "DT_Hit.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": 4,
+      "fps": 14,
+      "origin": [
+        8,
+        8
+      ],
+      "once": true
+    },
+    "seabed": {
+      "file": "DT_Seabed.png"
+    },
+    "pearl": {
+      "file": "DT_Pearl.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": 4,
+      "fps": 8,
+      "origin": [
+        8,
+        8
+      ]
+    },
+    "remora": {
+      "file": "DT_Remora.png",
+      "frameWidth": 48,
+      "frameHeight": 24,
+      "frames": 2,
+      "fps": 10,
+      "origin": [
+        26,
+        15
+      ],
+      "muzzle": [
+        42,
+        19
+      ]
+    },
+    "torpedo": {
+      "file": "DT_Torpedo.png",
+      "frameWidth": 16,
+      "frameHeight": 8,
+      "frames": 2,
+      "fps": 12,
+      "origin": [
+        2,
+        4
+      ]
+    },
+    "brinehaven": {
+      "file": "DT_Brinehaven_BG.png",
+      "origin": [
+        0,
+        0
+      ]
+    },
+    "shopkeeper": {
+      "file": "DT_Shopkeeper.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 2,
+      "fps": 2,
+      "origin": [
+        14,
+        31
+      ]
+    },
+    "shopIcons": {
+      "file": "DT_ShopIcons.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "origin": [
+        8,
+        8
+      ]
+    }
   }
 }

@@ -110,7 +110,7 @@ export class DiveScene extends Phaser.Scene {
     hud.add(this.airBar);
     this.scoreText = this.add.text(VIEW.w / 2, 12, 'SCORE 0', { fontFamily: 'monospace', fontSize: 22, color: '#ffd76a', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5, 0);
     this.depthText = this.add.text(14, 58, 'DEPTH 0 m', { fontFamily: 'monospace', fontSize: 14, color: '#cff4ff', stroke: '#000', strokeThickness: 3 });
-    hud.add(this.add.image(VIEW.w - 170, 24, 'pearl').setScale(1.4));
+    hud.add(artInfo(this, 'shopIcons') ? this.add.image(VIEW.w - 170, 24, 'shopIcons', 3).setScale(1.5) : this.add.image(VIEW.w - 170, 24, 'pearl').setScale(1.4));
     this.pearlText = this.add.text(VIEW.w - 156, 13, '0', { fontFamily: 'monospace', fontSize: 20, color: '#f3e9ff', stroke: '#000', strokeThickness: 4 });
     this.hullText = this.add.text(14, 78, '', { fontFamily: 'monospace', fontSize: 14, color: '#ffd76a', stroke: '#000', strokeThickness: 3 });
     this.hint = this.add.text(VIEW.w / 2, VIEW.h - 30, '', { fontFamily: 'monospace', fontSize: 16, color: '#fff', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5);
@@ -215,9 +215,12 @@ export class DiveScene extends Phaser.Scene {
 
   fireTorpedo() {
     const b = this.sub, f = this.subFacing;
-    const t = this.spears.create(b.x + f * 40, b.y + 8, 'torpedo');
-    dress(this, t, 'torpedo');
-    t.setFlipX(f < 0).setDepth(11);
+    // leave from the tube under the nose (the art's muzzle pixel), mirrored when the sub faces left
+    const mz = artInfo(this, 'remora')?.muzzle;
+    const at = mz ? framePoint(b, mz[0], mz[1]) : { x: b.x + f * 40, y: b.y + 8 };
+    const t = this.spears.create(at.x, at.y, 'torpedo');
+    dress(this, t.setFlipX(f < 0), 'torpedo');
+    t.setDepth(11);
     fitBody(t, 1, 0.8);
     t.setVelocityX(f * TORPEDO.speed0 + b.body.velocity.x * 0.5);
     t.setAccelerationX(f * TORPEDO.accel);
