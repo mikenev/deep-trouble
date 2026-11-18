@@ -56,7 +56,7 @@ export class Controls {
     const R = 62, cx = 96, cy = H - 96;
     const base = s.add.circle(cx, cy, R, 0xffffff, 0.12).setStrokeStyle(2, 0xffffff, 0.35);
     const knob = s.add.circle(cx, cy, 26, 0xffffff, 0.3);
-    const fire = s.add.circle(W - 92, H - 92, 46, 0xff7a3d, 0.35).setStrokeStyle(2, 0xffffff, 0.5);
+    const fire = s.add.circle(W - 92, H - 92, 50, 0xff7a3d, 0.35).setStrokeStyle(2, 0xffffff, 0.5);
     const fireTxt = s.add.text(W - 92, H - 92, 'FIRE', { fontFamily: 'monospace', fontSize: 16, color: '#fff' }).setOrigin(0.5);
     const pause = s.add.text(W - 120, 14, 'II', { fontFamily: 'monospace', fontSize: 20, color: '#fff', backgroundColor: '#0008', padding: { x: 10, y: 4 } });
     const mute = s.add.text(W - 64, 14, 'M', { fontFamily: 'monospace', fontSize: 20, color: '#fff', backgroundColor: '#0008', padding: { x: 10, y: 4 } });
@@ -66,6 +66,8 @@ export class Controls {
     this._act = [act, actTxt];
     ui.add([base, knob, fire, fireTxt, pause, mute, act, actTxt]);
     this._knob = knob;
+    this.fireButton = fire;
+    this.fireReach = 66;
     const t = this.touch;
     const inRect = (o, p) => o.getBounds().contains(p.x, p.y);
     s.input.on('pointerdown', (p) => {
@@ -75,12 +77,13 @@ export class Controls {
       if (inRect(mute, p)) { t.mute = true; return; }
       if (act.visible && Phaser.Math.Distance.Between(p.x, p.y, act.x, act.y) <= 40) { t.action = true; return; }
       if (p.x < W / 2 && t.stickId < 0) { t.stickId = p.id; this._stick(p, cx, cy, R); }
-      else if (p.x >= W / 2) { t.fireId = p.id; t.fire = true; t.firePress = true; }
+      // FIRE is a real button (with a little slack round the edge), not the whole right half
+      else if (t.fireId < 0 && Phaser.Math.Distance.Between(p.x, p.y, fire.x, fire.y) <= this.fireReach) { t.fireId = p.id; t.fire = true; t.firePress = true; fire.setFillStyle(0xff7a3d, 0.6); }
     });
     s.input.on('pointermove', (p) => { if (p.id === t.stickId) this._stick(p, cx, cy, R); });
     const up = (p) => {
       if (p.id === t.stickId) { t.stickId = -1; t.x = t.y = 0; knob.setPosition(cx, cy); }
-      if (p.id === t.fireId) { t.fireId = -1; t.fire = false; }
+      if (p.id === t.fireId) { t.fireId = -1; t.fire = false; fire.setFillStyle(0xff7a3d, 0.35); }
     };
     s.input.on('pointerup', up);
     s.input.on('pointerupoutside', up);

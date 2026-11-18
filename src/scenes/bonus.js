@@ -1,7 +1,7 @@
 import { VIEW, BONUS } from '../config.js';
 import { addPearls } from '../save.js';
 import { Controls } from '../controls.js';
-import { play, toggleMute, isMuted } from '../sfx.js';
+import { play, toggleMute, isMuted, music, loopSfx } from '../sfx.js';
 import { dress, artInfo, framePoint, plant } from '../art.js';
 
 // The seaplane bonus flight: fly over the shipping lane and bomb the jellyfish floating on it.
@@ -58,6 +58,10 @@ export class BonusScene extends Phaser.Scene {
     this.countText = this.add.text(14, 40, '', { ...st, fontSize: 16, color: '#f3e9ff' }).setDepth(900);
     this.hint = this.add.text(W / 2, H - 28, 'Fire drops a bomb: hit the jellyfish on the water', { ...st, fontSize: 16 }).setOrigin(0.5).setDepth(900);
     this.msg = this.add.text(W / 2, H / 2 - 40, '', { ...st, fontSize: 30, strokeThickness: 6, align: 'center' }).setOrigin(0.5).setDepth(950);
+    music('bonus');
+    // the prop's hum under the music for the whole flight
+    this.engine = loopSfx('engine');
+    this.events.once('shutdown', () => this.engine.stop());
     this.controls = new Controls(this);
     this.input.on('pointerdown', () => { if (this.armed) this.finish(); });
   }
@@ -86,7 +90,7 @@ export class BonusScene extends Phaser.Scene {
     b.body.setSize(b.frame.realWidth * 0.8, b.frame.realHeight * 0.8);
     b.setVelocity(this.vx * 0.55, 40);
     b.setAccelerationY(BONUS.bombGravity);
-    play('torpedo');
+    play('bomb');
     return b;
   }
 
@@ -121,6 +125,7 @@ export class BonusScene extends Phaser.Scene {
 
   // time's up: tally the run on a results card
   end() {
+    this.engine.stop();
     this.done = true;
     if (this.bombed >= BONUS.sharp) this.pearls += BONUS.sharpPearls;
     this.physics.pause();
@@ -178,7 +183,7 @@ export class BonusScene extends Phaser.Scene {
     if ((c.firePressed || c.enterPressed || c.fire || c.enter) && this.dropTimer <= 0) { if (this.dropBomb()) this.dropTimer = BONUS.bombCooldown; }
 
     for (const b of this.bombs.getChildren().slice()) {
-      if (b.y >= this.sea + 8) { this.splash(b.x, this.sea); b.destroy(); play('hit'); }
+      if (b.y >= this.sea + 8) { this.splash(b.x, this.sea); b.destroy(); play('splash'); }
     }
     for (const j of this.jellies.getChildren()) {
       j.t += dt;

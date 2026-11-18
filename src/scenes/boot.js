@@ -131,6 +131,23 @@ export class BootScene extends Phaser.Scene {
     make('splash', 40, 30, (g) => {
       g.fillStyle(0xe8fbff, 0.9).fillTriangle(4, 30, 12, 4, 18, 30).fillTriangle(14, 30, 20, 0, 26, 30).fillTriangle(22, 30, 30, 6, 36, 30);
     });
+    // M4 placeholders: Scarback (a big scarred shark, facing right), the warning sign and the title card
+    make('scarback', 150, 60, (g) => {
+      g.fillStyle(0x5d6b78).fillEllipse(78, 32, 120, 40);
+      g.fillStyle(0x4a5662).fillTriangle(0, 8, 26, 32, 0, 56).fillTriangle(60, 14, 82, 0, 90, 16);
+      g.fillStyle(0xd9dde2).fillEllipse(90, 42, 80, 14);
+      g.lineStyle(2, 0xe8c2b8).lineBetween(70, 20, 96, 30).lineBetween(76, 16, 100, 26);
+      g.fillStyle(0x111111).fillCircle(122, 26, 3);
+      g.fillStyle(0xffffff).fillTriangle(118, 40, 138, 38, 124, 44);
+    });
+    make('bossWarning', 64, 56, (g) => {
+      g.fillStyle(0xffd23d).fillTriangle(32, 0, 64, 56, 0, 56);
+      g.fillStyle(0x111111).fillRect(29, 16, 6, 22).fillRect(29, 43, 6, 6);
+    });
+    make('title', 480, 150, (g) => {
+      g.fillStyle(0x031019, 0.75).fillRoundedRect(0, 0, 480, 150, 14);
+      g.lineStyle(4, 0xffd76a).strokeRoundedRect(4, 4, 472, 142, 12);
+    });
     make('px', 2, 2, (g) => { g.fillStyle(0xffffff).fillRect(0, 0, 2, 2); });
     this.scene.start('title');
   }

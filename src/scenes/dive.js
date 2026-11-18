@@ -1,7 +1,7 @@
-import { VIEW, WORLD, DIVER, SPEAR, CREATURES, SPAWN, PEARL, REMORA, TORPEDO, DOCK, BONUS, BOXES } from '../config.js';
+import { VIEW, WORLD, DIVER, SPEAR, CREATURES, SPAWN, PEARL, REMORA, TORPEDO, DOCK, BONUS, BOXES, BOSS, PACK } from '../config.js';
 import { load as loadSave, addPearls } from '../save.js';
 import { Controls } from '../controls.js';
-import { play, toggleMute, isMuted } from '../sfx.js';
+import { play, toggleMute, isMuted, music } from '../sfx.js';
 import { dress, fitBody, artInfo, plant, framePoint, setBox } from '../art.js';
 
 const TYPES = Object.keys(CREATURES);
@@ -32,6 +32,14 @@ export class DiveScene extends Phaser.Scene {
     this.planeTimer = BONUS.first;
     this.plane = null;
     this.flying = false;
+    // Scarback, the boss: a warning, then the fight; after a win it comes back later, tougher
+    this.boss = null;
+    this.bossTimer = BOSS.at;
+    this.bossLevel = 0;
+    this.warnTimer = 0;
+    this.victoryPending = false;
+    // one bite per barracuda pack: stacked barracuda can't chain hits
+    this.packCooldown = 0;
 
     this.buildWorld();
 
@@ -78,8 +86,9 @@ export class DiveScene extends Phaser.Scene {
     this.controls = new Controls(this, { playAction: true });
     // scene events outlive a restart, so swap rather than stack the listener
     this.events.off('wake');
-    this.events.on('wake', (sys, data) => this.backFromBonus(data?.bonus));
+    this.events.on('wake', (sys, data) => (data?.victory ? this.backFromVictory() : this.backFromBonus(data?.bonus)));
     this.buildHud();
+    music('dive');
     // a few creatures waiting out in the water from the start
     for (let i = 0; i < 4; i++) this.spawn(600 + i * 280);
   }
@@ -124,6 +133,26 @@ export class DiveScene extends Phaser.Scene {
     hud.add([this.pearlText, this.hullText, this.hint]);
     this.msg = this.add.text(VIEW.w / 2, VIEW.h / 2, '', { fontFamily: 'monospace', fontSize: 32, color: '#fff', stroke: '#000', strokeThickness: 6, align: 'center' }).setOrigin(0.5);
     hud.add([this.scoreText, this.depthText, this.msg]);
+    // Scarback's health bar, under the score while the fight is on
+    const bx = VIEW.w / 2 - 160, by = 52;
+    const bar = this.bossBar = this.add.container(0, 0).setVisible(false);
+    const barArt = artInfo(this, 'bossBar'), fillArt = artInfo(this, 'bossBarFill');
+    if (barArt && fillArt) {
+      // Art Dev's metal frame, with the red fill cropped to Scarback's health inside its inset
+      const frame = dress(this, this.add.image(bx, by - 6, 'bossBar'), 'bossBar');
+      const [fx, fy] = barArt.fill || [14, 3];
+      this.bossFill = dress(this, this.add.image(bx + fx * barArt.scale, by - 6 + fy * barArt.scale, 'bossBarFill'), 'bossBarFill');
+      bar.add([frame, this.bossFill]);
+      bar.add(this.add.text(VIEW.w / 2 + 8, by + 22, 'SCARBACK', { fontFamily: 'monospace', fontSize: 13, color: '#fff', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0));
+    } else {
+      bar.add(this.add.rectangle(bx - 4, by - 4, 328, 22, 0x000000, 0.6).setOrigin(0));
+      this.bossFill = this.add.rectangle(bx, by, 320, 14, 0xd9433b).setOrigin(0);
+      bar.add(this.bossFill);
+      bar.add(this.add.text(VIEW.w / 2, by + 7, 'SCARBACK', { fontFamily: 'monospace', fontSize: 13, color: '#fff', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5));
+    }
+    this.warnIcon = dress(this, this.add.sprite(VIEW.w / 2, VIEW.h / 2 - 90, 'bossWarning'), 'bossWarning').setVisible(false);
+    if (artInfo(this, 'bossWarning')) this.warnIcon.setScale(this.warnIcon.scaleX * 1.5);
+    hud.add([bar, this.warnIcon]);
   }
 
   flash(text, ms = 900) {
@@ -278,7 +307,8 @@ export class DiveScene extends Phaser.Scene {
 
   subHit(e) {
     if (!this.inSub || this.invuln > 0 || this.over || !e.active) return;
-    this.hull = Math.max(0, this.hull - CREATURES[e.kind].damage);
+    if (this.packBite(e)) return;
+    this.hull = Math.max(0, this.hull - (e.isBoss ? BOSS.hullDamage : CREATURES[e.kind].damage));
     this.invuln = REMORA.hurtInvuln;
     this.cameras.main.shake(150, 0.006);
     play('hurt');
@@ -331,6 +361,7 @@ export class DiveScene extends Phaser.Scene {
     if (this.over) return;
     const pc = this.pc;
     if (!this.plane) {
+      if (this.boss || this.warnTimer > 0 || this.victoryPending) return; // no bonus flights mid-fight
       this.planeTimer -= dt;
       if (this.planeTimer <= 0) this.spawnPlane();
       return;
@@ -338,8 +369,16 @@ export class DiveScene extends Phaser.Scene {
     const p = this.plane;
     p.life -= dt;
     p.y = WORLD.surface - 10 + Math.sin(this.elapsed * 3) * 3;
-    if (p.life < 4) p.setAlpha(Math.sin(this.elapsed * 16) > 0 ? 1 : 0.35);
-    if (p.life <= 0) { p.destroy(); this.plane = null; this.planeTimer = BONUS.every; return; }
+    // the last few seconds: it blinks and a LEAVING SOON cue hangs over it
+    const leaving = p.life < BONUS.leaving;
+    if (leaving) p.setAlpha(Math.sin(this.elapsed * 16) > 0 ? 1 : 0.35);
+    if (p.flag) {
+      // the pennant rides the wing (it bobs with the plane) and the words float just above it
+      const at = framePoint(p, ...(artInfo(this, 'planeLeaving').attach || [22, 3]));
+      p.flag.setVisible(leaving).setPosition(at.x, at.y);
+      p.cue.setVisible(leaving).setPosition(p.x, at.y - 40 + Math.sin(this.elapsed * 6) * 3);
+    } else p.cue.setVisible(leaving).setPosition(p.x, p.y - 44 + Math.sin(this.elapsed * 6) * 3);
+    if (p.life <= 0) { this.dropPlane(); this.planeTimer = BONUS.every; return; }
     if (Math.abs(pc.x - p.x) < 70 && pc.y < WORLD.surface + 60) this.startBonus();
   }
 
@@ -353,15 +392,26 @@ export class DiveScene extends Phaser.Scene {
     const p = this.plane = this.add.sprite(x, WORLD.surface - 10, 'plane').setDepth(6);
     dress(this, p, 'plane');
     p.life = BONUS.moored;
+    p.cue = this.add.container(x, p.y - 44).setDepth(30).setVisible(false);
+    const flagArt = artInfo(this, 'planeLeaving');
+    if (flagArt) {
+      // Art Dev's pennant stands on the wing at the plane frame's attach point
+      const at = framePoint(p, ...(flagArt.attach || [22, 3]));
+      p.flag = dress(this, this.add.sprite(at.x, at.y, 'planeLeaving'), 'planeLeaving').setDepth(7).setVisible(false);
+      p.cue.setY(at.y - 44);
+    }
+    p.cue.add(this.add.text(0, 0, 'LEAVING SOON', { fontFamily: 'monospace', fontSize: 14, color: '#ffd76a', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5));
     this.flash('A SEAPLANE IS MOORED!\nReach it at the surface for a bonus flight', 1600);
     play('board');
     return p;
   }
 
+  dropPlane() { this.plane?.cue?.destroy(); this.plane?.flag?.destroy(); this.plane?.destroy(); this.plane = null; }
+
   startBonus() {
-    if (this.flying || this.over) return;
+    if (this.flying || this.over || this.victoryPending || this.boss || this.warnTimer > 0) return;
     this.flying = true;
-    this.plane?.destroy(); this.plane = null;
+    this.dropPlane();
     this.spears.clear(true, true);
     this.diver.off('animationupdate', this._onAtk);
     play('board');
@@ -375,11 +425,193 @@ export class DiveScene extends Phaser.Scene {
     this.planeTimer = BONUS.every;
     // a moment's grace while you find your bearings again
     this.invuln = Math.max(this.invuln, 1.5);
+    music(this.boss || this.warnTimer > 0 ? 'boss' : 'dive');
     if (!r) return;
     this.score += r.score;
     this.pearlText.setText(String(loadSave().pearls));
     this.save = loadSave();
     this.flash(`BONUS FLIGHT +${r.score}`, 1200);
+  }
+
+  // ---- Scarback, the boss shark ----
+  updateBoss(dt) {
+    if (this.over || this.victoryPending) return;
+    if (!this.boss) {
+      if (this.warnTimer > 0) {
+        this.warnTimer -= dt;
+        // the art blinks on its own; the stand-in triangle flashes
+        this.warnIcon.setVisible(artInfo(this, 'bossWarning') ? true : Math.sin(this.elapsed * 10) > -0.2);
+        if (this.warnTimer <= 0) { this.warnIcon.setVisible(false); this.spawnBoss(); }
+      } else {
+        this.bossTimer -= dt;
+        if (this.bossTimer <= 0) this.warnBoss();
+      }
+      return;
+    }
+    const b = this.boss, p = this.pc;
+    b.t += dt;
+    const toP = new Phaser.Math.Vector2(p.x - b.x, p.y - b.y);
+    const dist = toP.length();
+    let vx = b.body.velocity.x, vy = b.body.velocity.y;
+    const steer = (tx, ty, sp, k = 2.5) => {
+      const d = new Phaser.Math.Vector2(tx - b.x, ty - b.y);
+      if (d.length() > sp) d.setLength(sp);
+      vx += (d.x * k - vx) * Math.min(1, 4 * dt); vy += (d.y * k - vy) * Math.min(1, 4 * dt);
+    };
+    if (b.mode === 'enter') {
+      steer(p.x, p.y, BOSS.speed * 1.4, 1.2);
+      if (dist < 420 || b.t > 4) this.bossMode(b.next === 'circle' ? 'circle' : 'windup');
+    } else if (b.mode === 'circle') {
+      // slow circle round you at arm's length, then a lunge out of it
+      b.ang += dt * 1.1 * b.spin;
+      steer(p.x + Math.cos(b.ang) * BOSS.radius, p.y + Math.sin(b.ang) * BOSS.radius * 0.55, BOSS.speed * 2);
+      if (b.t > BOSS.circle) this.bossMode('windup');
+    } else if (b.mode === 'windup') {
+      // pulls back and flashes before it strikes, so you can see it coming
+      vx *= Math.exp(-5 * dt); vy *= Math.exp(-5 * dt);
+      b.setTint(Math.sin(b.t * 30) > 0 ? 0xff8a6a : 0xffffff);
+      b.aim = toP.lengthSq() ? toP.clone().normalize() : new Phaser.Math.Vector2(b.dir, 0);
+      if (b.t > BOSS.windup) { b.clearTint(); this.bossMode('lunge'); }
+    } else if (b.mode === 'lunge') {
+      vx = b.aim.x * BOSS.lungeSpeed; vy = b.aim.y * BOSS.lungeSpeed;
+      if (b.t > BOSS.lunge) this.bossMode('rest');
+    } else { // rest
+      vx *= Math.exp(-2.5 * dt); vy *= Math.exp(-2.5 * dt);
+      if (b.t > BOSS.rest) { b.next = b.next === 'circle' ? 'lunge' : 'circle'; this.bossMode(b.next === 'circle' ? 'circle' : 'windup'); }
+    }
+    // stays in the water, off the sand
+    if (b.y < WORLD.surface + 50 && vy < 0) vy = Math.abs(vy) * 0.3;
+    if (b.y > WORLD.floor - 40 && vy > 0) vy = -Math.abs(vy) * 0.3;
+    if ((b.x < 60 && vx < 0) || (b.x > WORLD.w - 60 && vx > 0)) vx = -vx * 0.3;
+    b.setVelocity(vx, vy);
+    if (Math.abs(vx) > 20) b.dir = Math.sign(vx);
+    if (b.flipX !== (b.dir < 0)) { plant(this, b.setFlipX(b.dir < 0), b.texture.key); setBox(this, b, 'scarback', BOSS.box); }
+    b.setAngle(Phaser.Math.Clamp(Math.atan2(vy, Math.abs(vx) + 1) * 30, -20, 20) * b.dir);
+  }
+
+  bossHealth(f) {
+    const fill = this.bossFill;
+    if (fill.type === 'Rectangle') fill.width = 320 * f;
+    else fill.setCrop(0, 0, Math.round(fill.frame.realWidth * f), fill.frame.realHeight);
+  }
+
+  // Scarback's look: swimming, jaws open on a lunge, a white flash when hit (all share one origin and body)
+  bossLook(key) {
+    const b = this.boss;
+    if (!b || !artInfo(this, key)) return;
+    b.setTexture(key, 0);
+    plant(this, b, key);
+    setBox(this, b, 'scarback', BOSS.box);
+    if (key === 'scarback') b.play('scarback-anim');
+    else if (key === 'scarbackBite') b.play('scarbackBite-anim');
+  }
+
+  bossMode(m) {
+    const b = this.boss;
+    if (m === 'lunge') this.bossLook('scarbackBite');
+    else if (b.mode === 'lunge') this.bossLook('scarback');
+    b.mode = m; b.t = 0;
+    if (m === 'circle') { b.ang = Math.atan2(b.y - this.pc.y, b.x - this.pc.x); b.spin = Math.random() < 0.5 ? -1 : 1; }
+  }
+
+  warnBoss() {
+    this.warnTimer = BOSS.warn;
+    // a plane still moored when the warning sounds flies off: no bonus flights mid-fight
+    if (this.plane) { this.dropPlane(); this.planeTimer = BONUS.every; }
+    this.flash('WARNING!\nSCARBACK IS COMING', BOSS.warn * 1000);
+    play('warning');
+    music('boss');
+  }
+
+  spawnBoss() {
+    const p = this.pc, side = p.x > WORLD.w - 900 ? -1 : p.x < 900 ? 1 : (Math.random() < 0.5 ? -1 : 1);
+    const x = Phaser.Math.Clamp(p.x + side * 640, 80, WORLD.w - 80);
+    const y = Phaser.Math.Clamp(p.y, WORLD.surface + 120, WORLD.floor - 100);
+    const b = this.boss = this.physics.add.sprite(x, y, 'scarback').setDepth(9);
+    dress(this, b, 'scarback');
+    b.isBoss = true; b.kind = 'scarback';
+    b.hpMax = b.hp = Math.round(BOSS.hp * BOSS.hpGrow ** this.bossLevel);
+    b.dir = -side; b.t = 0; b.mode = 'enter'; b.next = 'lunge';
+    if (b.dir < 0) plant(this, b.setFlipX(true), 'scarback');
+    if (!setBox(this, b, 'scarback', BOSS.box)) fitBody(b, 0.7, 0.6);
+    this.bossColliders = [
+      this.physics.add.overlap(this.spears, b, (x, y) => this.bossHit(x === b ? y : x)),
+      this.physics.add.overlap(this.diver, b, () => this.diverHit(b)),
+    ];
+    if (this.sub) this.bossColliders.push(this.physics.add.overlap(this.sub, b, () => this.subHit(b)));
+    this.bossHealth(1);
+    this.bossBar.setVisible(true);
+    play('roar');
+    return b;
+  }
+
+  bossHit(s) {
+    const b = this.boss;
+    if (!b || !s.active || b.hp <= 0) return;
+    s.destroy();
+    b.hp = Math.max(0, b.hp - (s.dmg || SPEAR.damage));
+    this.bossHealth(b.hp / b.hpMax);
+    this.pop(s.x, s.y);
+    if (artInfo(this, 'scarbackHurt')) {
+      if (b.texture.key !== 'scarbackHurt') {
+        b.anims.stop(); b.setTexture('scarbackHurt'); plant(this, b, 'scarbackHurt');
+        this.time.delayedCall(100, () => {
+          // back to whatever it's doing now (a mode change meanwhile already swapped it back)
+          if (this.boss !== b || b.texture.key !== 'scarbackHurt') return;
+          if (b.mode === 'lunge') { b.setTexture('scarbackBite', 1); plant(this, b, 'scarbackBite'); }
+          else this.bossLook('scarback');
+        });
+      }
+    } else if (b.mode !== 'windup') { b.setTintFill(0xffffff); this.time.delayedCall(70, () => b.active && b.mode !== 'windup' && b.clearTint()); }
+    play('bossHit');
+    if (b.hp <= 0) this.defeatBoss();
+  }
+
+  defeatBoss() {
+    const b = this.boss;
+    this.bossColliders.forEach((c) => c.destroy());
+    this.bossColliders = [];
+    this.boss = null;
+    this.victoryPending = true;
+    b.body.enable = false;
+    if (artInfo(this, 'scarbackDefeat')) {
+      // belly-up with an X eye, then it sinks away
+      b.clearTint().setAngle(0).setTexture('scarbackDefeat', 0); plant(this, b, 'scarbackDefeat');
+      b.play('scarbackDefeat-anim');
+      this.tweens.add({ targets: b, y: b.y + 120, alpha: 0, delay: 300, duration: 1000, onComplete: () => b.destroy() });
+    } else {
+      b.setTint(0x888888);
+      this.tweens.add({ targets: b, y: b.y + 120, angle: 180 * b.dir, alpha: 0, duration: 1100, onComplete: () => b.destroy() });
+    }
+    this.burst.explode(40, b.x, b.y);
+    this.cameras.main.shake(300, 0.01);
+    play('bossDown');
+    this.score += BOSS.score;
+    this.pearlText.setText(String(addPearls(BOSS.pearls)));
+    this.save = loadSave();
+    this.bossBar.setVisible(false);
+    this.flash('SCARBACK IS BEATEN!', 1100);
+    this.time.delayedCall(1200, () => this.openVictory());
+  }
+
+  openVictory() {
+    if (this.over || this.flying) return;
+    this.flying = true; // the dive sleeps under the victory card, as it does under a bonus flight
+    this.spears.clear(true, true);
+    this.diver.off('animationupdate', this._onAtk);
+    this.scene.launch('victory', { score: this.score, level: this.bossLevel + 1, pearls: BOSS.pearls, bonus: BOSS.score });
+    this.scene.sleep();
+  }
+
+  backFromVictory() {
+    this.flying = false;
+    this.victoryPending = false;
+    this.controls.reset();
+    this.bossLevel += 1;
+    this.bossTimer = BOSS.again;
+    this.invuln = Math.max(this.invuln, 1.5);
+    music('dive');
+    this.flash('THE DIVE GOES ON', 1000);
   }
 
   pop(x, y) {
@@ -388,9 +620,23 @@ export class DiveScene extends Phaser.Scene {
     h.play('hit-anim').once('animationcomplete', () => h.destroy());
   }
 
+  // stacked barracuda share one bite: after any of them lands one, the whole pack backs off
+  packBite(e) {
+    if (e.kind !== 'barracuda') return false;
+    if (this.packCooldown > 0) return true;
+    this.packCooldown = PACK.cooldown;
+    const p = this.pc;
+    for (const o of this.enemies.getChildren()) {
+      if (o.kind !== 'barracuda' || Phaser.Math.Distance.Between(o.x, o.y, p.x, p.y) > 200) continue;
+      o.dash = 0; o.rest = PACK.cooldown; o.dir = Math.sign(o.x - p.x) || 1;
+    }
+    return false;
+  }
+
   diverHit(e) {
     if (this.inSub || this.invuln > 0 || this.over || !e.active) return;
-    this.hurt(CREATURES[e.kind].damage);
+    if (this.packBite(e)) return;
+    this.hurt(e.isBoss ? BOSS.damage : CREATURES[e.kind].damage);
     const away = new Phaser.Math.Vector2(this.diver.x - e.x, this.diver.y - e.y).normalize().scale(DIVER.knockback);
     this.diver.setVelocity(away.x, away.y);
   }
@@ -408,7 +654,7 @@ export class DiveScene extends Phaser.Scene {
     play('over');
     this.pc.setTint(0x666666).setVelocity(0, -40);
     this.flash('OUT OF LUCK', 0);
-    this.time.delayedCall(1300, () => this.scene.start('over', { score: this.score }));
+    this.time.delayedCall(600, () => this.scene.start('over', { score: this.score }));
   }
 
   update(time, deltaMs) {
@@ -424,7 +670,8 @@ export class DiveScene extends Phaser.Scene {
       else if (this.nearSub()) act = 'BOARD';
     }
     // Play/Pause acts when there's something to act on, and otherwise pauses (or resumes)
-    const playAct = c.playPause && !!act;
+    // (at the boat it pauses too: docking is Select/Enter, E, Y or the touch button)
+    const playAct = c.playPause && (act === 'BOARD' || act === 'EXIT');
     if ((c.back || (c.playPause && !playAct)) && !this.over) this.setPaused(!this.paused);
     if (this.paused) return;
     const dt = Math.min(deltaMs, 50) / 1000;
@@ -432,7 +679,7 @@ export class DiveScene extends Phaser.Scene {
     const prompt = act === 'DOCK' || act === 'BOARD';
     this.controls.setAction(act);
     const touch = this.controls.touchUI?.visible;
-    this.hint.setText(act === 'DOCK' ? `${touch ? 'tap DOCK' : 'Enter'}: dock at Brinehaven port`
+    this.hint.setText(act === 'DOCK' ? `${touch ? 'tap DOCK' : 'Enter or E'}: dock at Brinehaven port`
       : act === 'BOARD' ? `${touch ? 'tap BOARD' : 'Enter'}: board the Remora`
       : act === 'EXIT' && !touch ? 'E or Play/Pause: leave the Remora' : '');
     if (act && (c.action || playAct || (prompt && c.enterPressed))) {
@@ -450,6 +697,9 @@ export class DiveScene extends Phaser.Scene {
     else if (under) this.air = Math.max(0, this.air - DIVER.airDrain * dt);
     else { this.air = Math.min(this.airMax, this.air + DIVER.airRefill * dt); if (this.wasUnder && !this.over) play('air'); }
     this.wasUnder = under && !this.inSub;
+    // three pings once as the air bar turns red
+    if (this.air < 25 && !this.lowAir && !this.over) { this.lowAir = true; play('airLow'); }
+    else if (this.air > 35) this.lowAir = false;
     if (this.air <= 0 && !this.over) {
       this.drownTimer += dt;
       if (this.drownTimer >= DIVER.drownDamageEvery) { this.drownTimer = 0; this.hurt(1); }
@@ -470,9 +720,11 @@ export class DiveScene extends Phaser.Scene {
 
     this.updatePlane(dt);
     if (this.flying) return;
+    this.packCooldown = Math.max(0, this.packCooldown - dt);
+    this.updateBoss(dt);
 
     this.spawnTimer -= dt;
-    const cap = Math.min(SPAWN.max, 4 + Math.floor(this.elapsed / 20));
+    const cap = this.boss || this.warnTimer > 0 ? 2 : Math.min(SPAWN.max, 4 + Math.floor(this.elapsed / 20));
     if (this.spawnTimer <= 0 && this.enemies.countActive() < cap) { this.spawn(); this.spawnTimer = SPAWN.every; }
 
     // HUD

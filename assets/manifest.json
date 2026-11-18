@@ -228,6 +228,143 @@
         0
       ],
       "sea": 214
+    },
+    "scarback": {
+      "file": "DT_Scarback_Swim.png",
+      "frameWidth": 128,
+      "frameHeight": 64,
+      "frames": 4,
+      "fps": 8,
+      "origin": [
+        75,
+        31
+      ],
+      "body": [
+        36,
+        18,
+        84,
+        27
+      ]
+    },
+    "scarbackBite": {
+      "file": "DT_Scarback_Bite.png",
+      "frameWidth": 128,
+      "frameHeight": 64,
+      "frames": 2,
+      "fps": 8,
+      "origin": [
+        75,
+        31
+      ],
+      "body": [
+        36,
+        18,
+        84,
+        27
+      ],
+      "bite": [
+        104,
+        30,
+        22,
+        16
+      ],
+      "biteFrame": 1,
+      "once": true
+    },
+    "scarbackHurt": {
+      "file": "DT_Scarback_Hurt.png",
+      "frameWidth": 128,
+      "frameHeight": 64,
+      "origin": [
+        75,
+        31
+      ],
+      "body": [
+        36,
+        18,
+        84,
+        27
+      ]
+    },
+    "scarbackDefeat": {
+      "file": "DT_Scarback_Defeat.png",
+      "frameWidth": 128,
+      "frameHeight": 64,
+      "frames": 2,
+      "fps": 3,
+      "origin": [
+        75,
+        31
+      ],
+      "once": true
+    },
+    "bossBar": {
+      "file": "DT_BossBar.png",
+      "origin": [
+        0,
+        0
+      ],
+      "fill": [
+        14,
+        3,
+        144,
+        6
+      ]
+    },
+    "bossBarFill": {
+      "file": "DT_BossBarFill.png",
+      "origin": [
+        0,
+        0
+      ]
+    },
+    "bossWarning": {
+      "file": "DT_BossWarning.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "frames": 2,
+      "fps": 4,
+      "origin": [
+        12,
+        12
+      ]
+    },
+    "planeLeaving": {
+      "file": "DT_PlaneLeaving.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": 2,
+      "fps": 4,
+      "origin": [
+        2,
+        14
+      ],
+      "attach": [
+        22,
+        3
+      ]
+    },
+    "title": {
+      "file": "DT_Title.png",
+      "origin": [
+        0,
+        0
+      ],
+      "pressStart": [
+        240,
+        203
+      ]
+    },
+    "pressStart": {
+      "file": "DT_PressStart.png",
+      "frameWidth": 72,
+      "frameHeight": 12,
+      "frames": 2,
+      "fps": 2,
+      "origin": [
+        36,
+        6
+      ]
     }
   }
 }
