@@ -31,6 +31,8 @@ export class Controls {
     // Fire TV remote keys that Phaser has no names for: Back (4), Menu (82), Play/Pause (179)
     this._onKey = (e) => {
       unlockAudio();
+      // always swallow the remote's own keys (an unhandled Back exits the app), but act on the first press only
+      if (e.keyCode === 4 || e.keyCode === 82 || e.keyCode === 179) e.preventDefault();
       if (e.repeat) return; // a held remote button mustn't toggle pause or the sub over and over
       if (e.keyCode === 4) { this._queued.back = true; e.preventDefault(); }
       if (e.keyCode === 179) { this._queued.play = true; e.preventDefault(); } // Play/Pause: sub / dock in the dive
