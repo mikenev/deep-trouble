@@ -12,16 +12,17 @@ export class Controls {
       w: K.W, a: K.A, s: K.S, d: K.D,
       space: K.SPACE, z: K.Z, enter: K.ENTER, esc: K.ESC, back: K.BACKSPACE, m: K.M, e: K.E,
     }, true, false);
-    this.state = { x: 0, y: 0, fire: false, firePressed: false, confirm: false, action: false, up: false, down: false, back: false, mute: false };
+    this.state = { x: 0, y: 0, fire: false, firePressed: false, confirm: false, action: false, enter: false, enterPressed: false, up: false, down: false, back: false, mute: false };
     this._prev = {};
-    this._queued = { back: false, mute: false };
+    this._queued = { back: false, mute: false, action: false };
     this.touch = { x: 0, y: 0, fire: false, back: false, mute: false, action: false, stickId: -1, fireId: -1 };
 
     // Fire TV remote keys that Phaser has no names for: Back (4), Menu (82), Play/Pause (179)
     this._onKey = (e) => {
       unlockAudio();
       if (e.keyCode === 4) { this._queued.back = true; e.preventDefault(); }
-      if (e.keyCode === 82 || e.keyCode === 179) { this._queued.back = true; e.preventDefault(); }
+      if (e.keyCode === 179) { this._queued.back = true; e.preventDefault(); }
+      if (e.keyCode === 82) { this._queued.action = true; e.preventDefault(); } // Menu: sub / dock
     };
     window.addEventListener('keydown', this._onKey);
     this._jd = {};
@@ -116,11 +117,13 @@ export class Controls {
     st.x = x; st.y = y; st.fire = fire || jd.space || jd.z;
     st.firePressed = jd.space || jd.z || padFire || !!t.firePress;
     st.confirm = jd.enter || jd.space || padFire || !!t.firePress;
-    st.action = jd.enter || jd.e || padAct || !!t.action;
+    // Enter (Fire TV Select) fires in the dive unless a dock or board prompt is up; the dive scene decides
+    st.enter = k.enter.isDown; st.enterPressed = !!jd.enter;
+    st.action = jd.e || padAct || !!t.action || this._queued.action;
     st.up = jd.up || padUp; st.down = jd.down || padDown;
     st.back = jd.esc || jd.back || padBack || t.back || this._queued.back;
     st.mute = jd.m || t.mute;
-    t.firePress = false; t.back = false; t.mute = false; t.action = false; this._queued.back = false;
+    t.firePress = false; t.back = false; t.mute = false; t.action = false; this._queued.back = false; this._queued.action = false;
     if (st.firePressed || x || y) unlockAudio();
     return st;
   }

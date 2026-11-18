@@ -6,7 +6,8 @@ let data = null;
 export function load() {
   if (data) return data;
   try { data = { ...fresh(), ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch { data = fresh(); }
-  if (!Number.isFinite(data.pearls) || data.pearls < 0) data.pearls = 0;
+  const n = (v, max) => (Number.isInteger(v) && v >= 0 ? Math.min(v, max) : 0);
+  data.pearls = n(data.pearls, 1e6); data.spear = n(data.spear, 2); data.air = n(data.air, 2); data.remora = data.remora === true;
   return data;
 }
 export function save() {

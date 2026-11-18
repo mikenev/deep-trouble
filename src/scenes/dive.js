@@ -192,6 +192,7 @@ export class DiveScene extends Phaser.Scene {
     this._onAtk = (anim, frame) => {
       if (anim.key !== 'diverAttack-anim' || frame.textureFrame !== atk.fireFrame) return;
       d.off('animationupdate', this._onAtk);
+      if (this.inSub || this.over) return;
       const m = framePoint(d, atk.muzzle[0], atk.muzzle[1]);
       this.launchSpear(m.x, m.y);
     };
@@ -286,6 +287,8 @@ export class DiveScene extends Phaser.Scene {
     const d = this.diver, b = this.sub;
     if (!b) return;
     this.inSub = on;
+    d.setAlpha(1); b.setAlpha(1);
+    d.off('animationupdate', this._onAtk);
     if (on) {
       d.setVisible(false); d.body.enable = false; d.setVelocity(0, 0);
       b.setAlpha(1);
@@ -346,24 +349,29 @@ export class DiveScene extends Phaser.Scene {
     if (this.paused) return;
     const dt = Math.min(deltaMs, 50) / 1000;
     this.elapsed += dt;
-    if (this.inSub) this.driveSub(c, dt);
-    else this.swim(c, dt);
-    const d = this.pc;
-
-    // context action: dock at the boat, or board / leave the Remora
+    // context action: dock at the boat, or board / leave the Remora.
+    // E, Y, Menu or the touch button always act; Enter (Fire TV Select) acts at a dock or board
+    // prompt and otherwise fires, so it never does both.
     let act = null;
     if (!this.over) {
       if (this.nearDock()) act = 'DOCK';
       else if (this.inSub) act = 'EXIT';
       else if (this.nearSub()) act = 'BOARD';
     }
+    const prompt = act === 'DOCK' || act === 'BOARD';
     this.controls.setAction(act);
-    const keyName = this.controls.touchUI?.visible ? 'tap ' + act : 'Enter';
-    this.hint.setText(act === 'DOCK' ? `${keyName}: dock at Brinehaven port` : act === 'BOARD' ? `${keyName}: board the Remora` : '');
-    if (c.action && act) {
+    const touch = this.controls.touchUI?.visible;
+    this.hint.setText(act === 'DOCK' ? `${touch ? 'tap DOCK' : 'Enter'}: dock at Brinehaven port`
+      : act === 'BOARD' ? `${touch ? 'tap BOARD' : 'Enter'}: board the Remora`
+      : act === 'EXIT' && !touch ? 'E: leave the Remora' : '');
+    if (act && (c.action || (prompt && c.enterPressed))) {
       if (act === 'DOCK') { this.dock(); return; }
       this.setInSub(act === 'BOARD');
     }
+    if ((c.enter || c.enterPressed) && !prompt) c.fire = true;
+    if (this.inSub) this.driveSub(c, dt);
+    else this.swim(c, dt);
+    const d = this.pc;
 
     // air drains underwater and refills at the surface (or slowly inside the Remora); at zero it hurts
     const under = d.y > WORLD.surface + 14;

@@ -27,7 +27,7 @@ export class ShopScene extends Phaser.Scene {
       const name = this.add.text(W / 2 - 290, y - 20, '', { fontFamily: 'monospace', fontSize: 22, color: '#ffffff' });
       const desc = this.add.text(W / 2 - 290, y + 6, '', { fontFamily: 'monospace', fontSize: 15, color: '#9fd0ea' });
       const cost = this.add.text(W / 2 + 290, y, '', { fontFamily: 'monospace', fontSize: 22, color: '#f3e9ff' }).setOrigin(1, 0.5);
-      bg.on('pointerdown', () => { unlockAudio(); if (this.left) return; this.sel = i; this.activate(); });
+      bg.on('pointerdown', () => { unlockAudio(); if (this.left || !this.ready) return; this.sel = i; this.activate(); });
       return { key, bg, name, desc, cost };
     });
     this.add.text(W / 2, H - 22, 'Up/Down choose   Enter buy   Esc back to title   M mute', { fontFamily: 'monospace', fontSize: 15, color: '#e8f4ff', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
